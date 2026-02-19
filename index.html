@@ -1,0 +1,1737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>REMT — Rider Experience Measurement Toolkit</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800;900&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   TOKENS
+═══════════════════════════════════════════ */
+:root {
+  --coral:#E8503A; --coral-dark:#C73E29; --coral-hover:#F26B57;
+  --coral-pale:#FDF0EE; --coral-muted:rgba(232,80,58,0.09);
+  --coral-glow:rgba(232,80,58,0.25);
+  --white:#FFFFFF; --off-white:#F9F8F6;
+  --s50:#F5F4F2; --s100:#EEECEA; --s200:#D8D6D3; --s300:#BCBAB7;
+  --s400:#9B9997; --s500:#706E6B; --s700:#3E3C3A; --s900:#1C1A18;
+  --success:#1F9E6A; --sp:#E8F7F1;
+  --warn:#D97706; --wp:#FEF3C7;
+  --danger:#DC2626; --dp:#FEF2F2;
+  --info:#2563EB; --ip:#EFF6FF;
+  --purple:#7C3AED; --pink:#DB2777;
+  --font:'Sora',sans-serif; --mono:'IBM Plex Mono',monospace;
+  --r:14px; --rsm:9px; --rxs:6px;
+  --sw:256px;
+  --ease:cubic-bezier(0.4,0,0.2,1);
+  --spring:cubic-bezier(0.34,1.56,0.64,1);
+}
+
+/* ═══════════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:15px;scroll-behavior:smooth;}
+body{font-family:var(--font);background:var(--off-white);color:var(--s900);overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+button{cursor:pointer;font-family:var(--font);border:none;background:none;}
+input,select{font-family:var(--font);}
+canvas{display:block;}
+::selection{background:var(--coral-pale);color:var(--coral-dark);}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--s200);border-radius:99px;}
+::-webkit-scrollbar-thumb:hover{background:var(--s300);}
+
+/* ═══════════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════════ */
+.app{display:flex;min-height:100vh;}
+
+/* ═══════════════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════════════ */
+.sidebar{
+  width:var(--sw);background:var(--white);
+  border-right:1px solid var(--s100);
+  display:flex;flex-direction:column;
+  position:fixed;top:0;left:0;bottom:0;z-index:200;
+  transition:transform 0.3s var(--ease);
+}
+.sidebar-logo{
+  padding:1.4rem 1.4rem 1.1rem;
+  border-bottom:1px solid var(--s100);
+  display:flex;align-items:center;gap:0.65rem;
+}
+.logo-mark{
+  width:34px;height:34px;background:var(--coral);border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  color:white;font-weight:900;font-size:0.95rem;letter-spacing:-0.05em;
+  box-shadow:0 4px 12px var(--coral-glow);
+  flex-shrink:0;
+  transition:transform 0.2s var(--spring),box-shadow 0.2s;
+}
+.logo-mark:hover{transform:scale(1.08);box-shadow:0 6px 20px var(--coral-glow);}
+.logo-text{font-weight:800;font-size:1rem;letter-spacing:-0.025em;color:var(--s900);}
+.logo-text span{color:var(--coral);}
+.logo-version{font-family:var(--mono);font-size:0.6rem;color:var(--s400);margin-top:0.1rem;}
+
+.sidebar-search{
+  padding:0.75rem 0.9rem;
+  border-bottom:1px solid var(--s100);
+}
+.search-input{
+  width:100%;background:var(--s50);border:1px solid var(--s100);
+  border-radius:var(--rsm);padding:0.45rem 0.75rem 0.45rem 2.1rem;
+  font-size:0.8rem;color:var(--s700);outline:none;
+  transition:all 0.2s;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239B9997' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:0.6rem center;
+  background-size:14px;
+}
+.search-input::placeholder{color:var(--s400);}
+.search-input:focus{background-color:var(--white);border-color:var(--coral);box-shadow:0 0 0 3px var(--coral-muted);}
+
+.sidebar-nav{flex:1;padding:0.75rem 0.65rem;overflow-y:auto;}
+.nav-group{margin-bottom:0.25rem;}
+.nav-group-label{
+  font-size:0.62rem;font-weight:700;letter-spacing:0.12em;
+  text-transform:uppercase;color:var(--s400);
+  padding:0.55rem 0.75rem 0.3rem;
+}
+.nav-item{
+  display:flex;align-items:center;gap:0.65rem;
+  padding:0.55rem 0.75rem;border-radius:var(--rsm);
+  font-size:0.85rem;font-weight:500;color:var(--s500);
+  cursor:pointer;transition:all 0.15s var(--ease);
+  margin-bottom:1px;position:relative;user-select:none;
+}
+.nav-item:hover{background:var(--s50);color:var(--s900);}
+.nav-item:hover .nav-shortcut{opacity:1;}
+.nav-item.active{
+  background:var(--coral-muted);color:var(--coral);font-weight:600;
+}
+.nav-item.active::before{
+  content:'';position:absolute;left:0;top:20%;bottom:20%;
+  width:3px;background:var(--coral);border-radius:0 3px 3px 0;
+  animation:slideIn 0.2s var(--ease);
+}
+@keyframes slideIn{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+.nav-icon{
+  width:28px;height:28px;border-radius:7px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.85rem;flex-shrink:0;
+  background:var(--s50);
+  transition:all 0.15s;
+}
+.nav-item:hover .nav-icon{background:var(--s100);}
+.nav-item.active .nav-icon{background:var(--coral-pale);}
+.nav-label{flex:1;white-space:nowrap;}
+.nav-shortcut{
+  font-family:var(--mono);font-size:0.6rem;color:var(--s300);
+  background:var(--s50);border:1px solid var(--s100);
+  padding:0.1rem 0.35rem;border-radius:4px;
+  opacity:0;transition:opacity 0.15s;
+  flex-shrink:0;
+}
+.nav-badge{
+  margin-left:auto;background:var(--coral);color:white;
+  font-size:0.6rem;font-weight:700;padding:0.15rem 0.42rem;
+  border-radius:20px;min-width:18px;text-align:center;
+  animation:badgePop 0.3s var(--spring);
+}
+@keyframes badgePop{from{transform:scale(0)}to{transform:scale(1)}}
+
+.sidebar-bottom{
+  padding:0.85rem 1.1rem;
+  border-top:1px solid var(--s100);
+}
+.kb-hint{
+  font-size:0.72rem;color:var(--s400);
+  display:flex;align-items:center;gap:0.4rem;margin-bottom:0.6rem;
+}
+.kb-hint kbd{
+  font-family:var(--mono);font-size:0.6rem;background:var(--s50);
+  border:1px solid var(--s200);border-radius:4px;padding:0.1rem 0.35rem;color:var(--s500);
+}
+.sidebar-user{
+  display:flex;align-items:center;gap:0.6rem;
+  padding:0.5rem;border-radius:var(--rsm);
+  transition:background 0.15s;cursor:pointer;
+}
+.sidebar-user:hover{background:var(--s50);}
+.user-avatar{
+  width:28px;height:28px;border-radius:50%;
+  background:linear-gradient(135deg,var(--coral),var(--coral-hover));
+  color:white;font-size:0.7rem;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.user-name{font-size:0.8rem;font-weight:600;color:var(--s700);}
+.user-role{font-size:0.7rem;color:var(--s400);}
+
+/* ═══════════════════════════════════════════
+   MAIN
+═══════════════════════════════════════════ */
+.main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;min-height:100vh;}
+
+/* TOPBAR */
+.topbar{
+  background:rgba(255,255,255,0.9);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--s100);
+  padding:0 1.75rem;height:58px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:190;
+}
+.topbar-left{display:flex;align-items:center;gap:0.75rem;}
+.breadcrumb{display:flex;align-items:center;gap:0.35rem;font-size:0.78rem;color:var(--s400);}
+.breadcrumb .current{color:var(--s900);font-weight:700;}
+.breadcrumb .sep{color:var(--s300);}
+.live-badge{
+  display:flex;align-items:center;gap:0.35rem;
+  background:var(--sp);color:var(--success);
+  font-size:0.68rem;font-weight:700;padding:0.22rem 0.6rem;
+  border-radius:20px;font-family:var(--mono);letter-spacing:0.03em;
+}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--success);animation:pulse 1.8s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.85)}}
+.topbar-right{display:flex;align-items:center;gap:0.6rem;}
+.seg-select{
+  border:1px solid var(--s200);border-radius:var(--rsm);
+  padding:0.38rem 2rem 0.38rem 0.75rem;
+  font-size:0.78rem;color:var(--s700);font-family:var(--font);
+  background:var(--white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239B9997' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 0.6rem center;
+  appearance:none;cursor:pointer;outline:none;transition:all 0.15s;
+}
+.seg-select:focus{border-color:var(--coral);box-shadow:0 0 0 3px var(--coral-muted);}
+.seg-select:hover{border-color:var(--s300);}
+
+/* BUTTONS */
+.btn{border-radius:var(--rsm);font-size:0.82rem;font-weight:600;padding:0.48rem 1rem;transition:all 0.15s var(--ease);display:inline-flex;align-items:center;gap:0.4rem;cursor:pointer;border:none;white-space:nowrap;}
+.btn-coral{background:var(--coral);color:white;box-shadow:0 1px 2px rgba(0,0,0,0.1),0 4px 12px var(--coral-glow);}
+.btn-coral:hover{background:var(--coral-dark);transform:translateY(-1px);box-shadow:0 2px 4px rgba(0,0,0,0.12),0 6px 20px var(--coral-glow);}
+.btn-coral:active{transform:translateY(0);box-shadow:0 1px 2px rgba(0,0,0,0.1);}
+.btn-ghost{background:transparent;color:var(--s500);padding:0.48rem 0.75rem;}
+.btn-ghost:hover{background:var(--s50);color:var(--s900);}
+.btn-outline{background:var(--white);color:var(--s700);border:1px solid var(--s200);}
+.btn-outline:hover{border-color:var(--coral);color:var(--coral);}
+.btn-icon{width:32px;height:32px;padding:0;justify-content:center;border-radius:var(--rsm);background:transparent;color:var(--s500);}
+.btn-icon:hover{background:var(--s50);color:var(--s900);}
+
+/* ═══════════════════════════════════════════
+   PAGES
+═══════════════════════════════════════════ */
+.page{display:none;padding:1.75rem;animation:pageIn 0.3s var(--ease) both;}
+.page.active{display:block;}
+@keyframes pageIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* ═══════════════════════════════════════════
+   CARDS
+═══════════════════════════════════════════ */
+.card{
+  background:var(--white);border-radius:var(--r);
+  border:1px solid var(--s100);
+  box-shadow:0 1px 3px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.03);
+  transition:box-shadow 0.2s var(--ease);
+  overflow:hidden;
+}
+.card:hover{box-shadow:0 4px 20px rgba(0,0,0,0.07),0 2px 8px rgba(0,0,0,0.04);}
+.card-header{padding:1.25rem 1.4rem 0;display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.1rem;}
+.card-title{font-size:0.88rem;font-weight:700;color:var(--s900);letter-spacing:-0.01em;}
+.card-sub{font-size:0.75rem;color:var(--s400);margin-top:0.15rem;line-height:1.4;}
+.card-body{padding:0 1.4rem 1.4rem;}
+.card-accent{position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r) var(--r) 0 0;}
+
+/* ═══════════════════════════════════════════
+   METRIC TILES
+═══════════════════════════════════════════ */
+.kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:1rem;margin-bottom:1.25rem;}
+.kpi-tile{
+  background:var(--white);border:1px solid var(--s100);border-radius:var(--r);
+  padding:1.1rem 1.15rem;
+  box-shadow:0 1px 3px rgba(0,0,0,0.05);
+  position:relative;overflow:hidden;cursor:pointer;
+  transition:all 0.2s var(--ease);
+}
+.kpi-tile::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,0) 0%,rgba(255,255,255,0.5) 100%);
+  opacity:0;transition:opacity 0.2s;
+}
+.kpi-tile:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,0.09),0 3px 8px rgba(0,0,0,0.05);}
+.kpi-tile:hover::after{opacity:1;}
+.kpi-tile:active{transform:translateY(-1px);}
+.kpi-top-bar{position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r) var(--r) 0 0;}
+.kpi-label{font-size:0.68rem;color:var(--s400);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.45rem;margin-top:0.1rem;}
+.kpi-value{font-size:1.75rem;font-weight:800;letter-spacing:-0.035em;line-height:1;color:var(--s900);}
+.kpi-value sub{font-size:0.85rem;font-weight:600;vertical-align:baseline;opacity:0.7;}
+.kpi-trend{font-size:0.72rem;font-weight:600;margin-top:0.4rem;display:flex;align-items:center;gap:0.2rem;}
+.trend-up{color:var(--success);}
+.trend-down{color:var(--danger);}
+.trend-flat{color:var(--warn);}
+.kpi-bar{height:4px;background:var(--s100);border-radius:99px;margin-top:0.65rem;overflow:hidden;}
+.kpi-bar-fill{height:100%;border-radius:99px;transition:width 1.4s cubic-bezier(0.34,1.1,0.64,1);}
+.kpi-sparkline{position:absolute;bottom:0;right:0;opacity:0.12;}
+
+/* ═══════════════════════════════════════════
+   HERO BANNER
+═══════════════════════════════════════════ */
+.hero-banner{
+  background:var(--coral);border-radius:var(--r);
+  padding:2.25rem 2.5rem;margin-bottom:1.25rem;
+  position:relative;overflow:hidden;color:white;
+}
+.hero-banner::before{
+  content:'';position:absolute;right:-80px;top:-80px;
+  width:320px;height:320px;border-radius:50%;
+  background:rgba(255,255,255,0.07);pointer-events:none;
+}
+.hero-banner::after{
+  content:'';position:absolute;right:160px;bottom:-100px;
+  width:220px;height:220px;border-radius:50%;
+  background:rgba(255,255,255,0.05);pointer-events:none;
+}
+.hero-eyebrow{
+  font-size:0.68rem;font-weight:700;letter-spacing:0.18em;
+  text-transform:uppercase;opacity:0.65;margin-bottom:0.6rem;
+  display:flex;align-items:center;gap:0.5rem;
+}
+.hero-title{font-size:1.85rem;font-weight:900;letter-spacing:-0.03em;line-height:1.12;margin-bottom:0.6rem;}
+.hero-sub{font-size:0.88rem;opacity:0.75;max-width:480px;line-height:1.65;margin-bottom:1.4rem;}
+.hero-kpis{display:flex;gap:2.5rem;margin-bottom:1.5rem;}
+.hero-kpi .val{font-size:1.9rem;font-weight:900;letter-spacing:-0.03em;line-height:1;}
+.hero-kpi .lbl{font-size:0.68rem;opacity:0.65;text-transform:uppercase;letter-spacing:0.08em;margin-top:0.2rem;}
+.hero-actions{display:flex;gap:0.75rem;position:relative;z-index:1;}
+.btn-white{background:white;color:var(--coral);font-weight:700;border-radius:var(--rsm);padding:0.55rem 1.35rem;font-family:var(--font);font-size:0.82rem;transition:all 0.15s;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:0.4rem;}
+.btn-white:hover{background:var(--coral-pale);transform:translateY(-1px);}
+.btn-ghost-white{background:rgba(255,255,255,0.12);color:white;font-weight:600;border-radius:var(--rsm);padding:0.55rem 1.35rem;font-family:var(--font);font-size:0.82rem;transition:all 0.15s;cursor:pointer;border:none;backdrop-filter:blur(4px);}
+.btn-ghost-white:hover{background:rgba(255,255,255,0.2);}
+
+/* ═══════════════════════════════════════════
+   GRIDS
+═══════════════════════════════════════════ */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.1rem;}
+.grid-auto{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:1.1rem;}
+.col-2{grid-column:span 2;}
+
+/* ═══════════════════════════════════════════
+   SECTION HEADERS
+═══════════════════════════════════════════ */
+.section-header{margin-bottom:1.25rem;}
+.section-title{font-size:1.15rem;font-weight:800;letter-spacing:-0.025em;color:var(--s900);}
+.section-sub{font-size:0.82rem;color:var(--s400);margin-top:0.25rem;line-height:1.5;}
+
+/* ═══════════════════════════════════════════
+   TABS
+═══════════════════════════════════════════ */
+.tabs-wrap{display:flex;gap:0;border-bottom:1px solid var(--s100);margin-bottom:1.25rem;overflow-x:auto;}
+.tabs-wrap::-webkit-scrollbar{height:0;}
+.tab-btn{
+  padding:0.65rem 1.1rem;font-size:0.82rem;font-weight:600;
+  color:var(--s500);background:none;border:none;
+  border-bottom:2px solid transparent;margin-bottom:-1px;
+  transition:all 0.15s var(--ease);cursor:pointer;white-space:nowrap;
+  display:flex;align-items:center;gap:0.4rem;
+}
+.tab-btn:hover{color:var(--s900);}
+.tab-btn.active{color:var(--coral);border-bottom-color:var(--coral);}
+.tab-pane{display:none;}
+.tab-pane.active{display:block;animation:pageIn 0.2s var(--ease) both;}
+
+/* ═══════════════════════════════════════════
+   BADGES
+═══════════════════════════════════════════ */
+.badge{display:inline-flex;align-items:center;gap:0.25rem;padding:0.18rem 0.55rem;border-radius:20px;font-size:0.7rem;font-weight:600;}
+.bg{background:var(--sp);color:var(--success);}
+.ba{background:var(--wp);color:var(--warn);}
+.br{background:var(--dp);color:var(--danger);}
+.bc{background:var(--coral-pale);color:var(--coral);}
+.bb{background:var(--ip);color:var(--info);}
+
+/* ═══════════════════════════════════════════
+   DATA TABLE
+═══════════════════════════════════════════ */
+.data-table{width:100%;border-collapse:collapse;font-size:0.83rem;}
+.data-table th{text-align:left;padding:0.6rem 1rem;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;color:var(--s400);border-bottom:1px solid var(--s100);white-space:nowrap;}
+.data-table td{padding:0.75rem 1rem;border-bottom:1px solid var(--s50);vertical-align:middle;}
+.data-table tr:last-child td{border-bottom:none;}
+.data-table tbody tr{transition:background 0.1s;cursor:pointer;}
+.data-table tbody tr:hover{background:var(--s50);}
+.mono{font-family:var(--mono);font-size:0.8rem;}
+
+/* ═══════════════════════════════════════════
+   PROGRESS BARS
+═══════════════════════════════════════════ */
+.prog{height:5px;background:var(--s100);border-radius:99px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:99px;transition:width 1.4s cubic-bezier(0.34,1.1,0.64,1);}
+
+/* ═══════════════════════════════════════════
+   PILLAR CARDS (KPI Tree)
+═══════════════════════════════════════════ */
+.pillar-card{background:var(--white);border:1px solid var(--s100);border-radius:var(--r);overflow:hidden;transition:all 0.2s var(--ease);box-shadow:0 1px 3px rgba(0,0,0,0.05);}
+.pillar-card:hover{box-shadow:0 4px 20px rgba(0,0,0,0.08);}
+.pillar-card.open{border-color:var(--s200);}
+.pillar-row{display:flex;align-items:center;padding:1.1rem 1.4rem;cursor:pointer;gap:0.9rem;user-select:none;}
+.pillar-row:hover{background:var(--s50);}
+.pillar-icon-wrap{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;transition:transform 0.2s var(--spring);}
+.pillar-card:hover .pillar-icon-wrap{transform:scale(1.08);}
+.pillar-name{font-size:0.9rem;font-weight:700;color:var(--s900);}
+.pillar-desc{font-size:0.75rem;color:var(--s400);margin-top:0.1rem;}
+.pillar-meta{margin-left:auto;text-align:right;flex-shrink:0;}
+.pillar-score{font-size:1.5rem;font-weight:800;letter-spacing:-0.03em;line-height:1;}
+.pillar-trend{font-size:0.72rem;font-weight:600;margin-top:0.1rem;}
+.pillar-chevron{color:var(--s300);font-size:0.75rem;transition:transform 0.2s var(--ease);flex-shrink:0;margin-left:0.5rem;}
+.pillar-body{display:none;padding:0 1.4rem 1.4rem;border-top:1px solid var(--s50);}
+.pillar-body.open{display:block;animation:slideDown 0.25s var(--ease);}
+@keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:0.65rem;margin-top:1rem;}
+.metric-item{background:var(--s50);border-radius:var(--rsm);padding:0.8rem;transition:background 0.15s;cursor:default;}
+.metric-item:hover{background:var(--s100);}
+.metric-item-label{font-size:0.7rem;color:var(--s500);margin-bottom:0.3rem;}
+.metric-item-val{font-family:var(--mono);font-size:1rem;font-weight:500;color:var(--s900);}
+.metric-item-trend{font-size:0.7rem;margin-top:0.15rem;}
+
+/* ═══════════════════════════════════════════
+   PLAYBOOK CARDS
+═══════════════════════════════════════════ */
+.pb-card{
+  background:var(--white);border:1px solid var(--s100);border-radius:var(--r);
+  padding:1.2rem 1.2rem 1.2rem 1.4rem;
+  position:relative;overflow:hidden;
+  transition:all 0.2s var(--ease);
+  box-shadow:0 1px 3px rgba(0,0,0,0.05);
+  cursor:pointer;
+}
+.pb-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:var(--r) 0 0 var(--r);}
+.pb-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.09);}
+.pb-card:active{transform:translateY(0);}
+.pb-tag{display:inline-block;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;padding:0.15rem 0.5rem;border-radius:4px;margin-bottom:0.55rem;}
+.pb-card h4{font-size:0.88rem;font-weight:700;margin-bottom:0.45rem;color:var(--s900);}
+.pb-card p{font-size:0.8rem;color:var(--s500);line-height:1.6;}
+
+/* ESCALATION */
+.esc-path{max-width:620px;margin:0 auto;}
+.esc-row{display:flex;gap:0.9rem;position:relative;}
+.esc-spine{display:flex;flex-direction:column;align-items:center;flex-shrink:0;}
+.esc-dot{
+  width:34px;height:34px;border-radius:50%;
+  background:var(--coral-pale);border:2px solid var(--coral);
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.7rem;font-weight:700;color:var(--coral);flex-shrink:0;
+  transition:all 0.2s var(--spring);
+}
+.esc-row:hover .esc-dot{background:var(--coral);color:white;transform:scale(1.1);}
+.esc-connector{flex:1;width:2px;background:linear-gradient(180deg,var(--s200),transparent);margin:3px 0;min-height:20px;}
+.esc-card{
+  background:var(--white);border:1px solid var(--s100);
+  border-radius:var(--rsm);padding:0.9rem 1.1rem;
+  margin-bottom:0.75rem;flex:1;
+  box-shadow:0 1px 3px rgba(0,0,0,0.05);
+  transition:all 0.2s;
+}
+.esc-row:hover .esc-card{border-color:var(--coral);box-shadow:0 4px 16px var(--coral-glow);}
+.esc-level{font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--coral);margin-bottom:0.25rem;}
+.esc-title{font-size:0.88rem;font-weight:700;color:var(--s900);}
+.esc-desc{font-size:0.78rem;color:var(--s500);margin-top:0.25rem;line-height:1.5;}
+.esc-sla{font-family:var(--mono);font-size:0.7rem;color:var(--warn);margin-top:0.35rem;}
+
+/* SIMULATOR */
+.sim-panel{background:var(--white);border:1px solid var(--s100);border-radius:var(--r);padding:1.4rem;box-shadow:0 1px 3px rgba(0,0,0,0.05);}
+.sim-group{margin-bottom:0.9rem;}
+.sim-label{font-size:0.76rem;font-weight:600;color:var(--s700);margin-bottom:0.35rem;display:flex;justify-content:space-between;align-items:center;}
+.sim-val{font-family:var(--mono);color:var(--coral);font-weight:600;font-size:0.76rem;}
+input[type=range]{width:100%;accent-color:var(--coral);cursor:pointer;height:4px;}
+input[type=range]::-webkit-slider-thumb{width:16px;height:16px;}
+.sim-result{background:linear-gradient(135deg,var(--coral-pale),rgba(253,240,238,0.5));border:1px solid rgba(232,80,58,0.15);border-radius:var(--rsm);padding:1.1rem;margin-top:1.25rem;}
+.sim-result-title{font-size:0.82rem;font-weight:700;color:var(--coral);margin-bottom:0.65rem;display:flex;align-items:center;gap:0.4rem;}
+.sim-row{display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;padding:0.28rem 0;color:var(--s700);border-bottom:1px solid rgba(232,80,58,0.08);}
+.sim-row:last-child{border-bottom:none;}
+.sim-row-val{font-family:var(--mono);font-weight:600;color:var(--s900);}
+.sim-row-val.positive{color:var(--success);}
+.sim-row-val.revenue{color:var(--coral);font-weight:700;}
+
+/* HEATMAP */
+.hm-table{width:100%;}
+.hm-label{font-size:0.72rem;font-weight:600;color:var(--s400);text-align:center;padding:0.35rem 0.5rem;}
+.hm-row-label{font-size:0.8rem;font-weight:700;color:var(--s700);padding:0.4rem 0.6rem;}
+.hm-cell{
+  border-radius:var(--rsm);padding:0.6rem;text-align:center;
+  cursor:pointer;transition:all 0.15s var(--ease);position:relative;
+}
+.hm-cell:hover{transform:scale(1.06);box-shadow:0 4px 16px rgba(0,0,0,0.12);z-index:1;}
+.hm-score{font-family:var(--mono);font-size:0.92rem;font-weight:700;}
+.hm-delta{font-size:0.65rem;margin-top:2px;}
+
+/* ALERTS */
+.alert-item{
+  display:flex;align-items:flex-start;gap:0.7rem;
+  padding:0.8rem;border-radius:var(--rsm);margin-bottom:0.4rem;
+  background:var(--s50);transition:all 0.15s;cursor:pointer;
+  border:1px solid transparent;
+}
+.alert-item:hover{background:var(--s100);border-color:var(--s200);}
+.alert-dot{width:8px;height:8px;border-radius:50%;margin-top:0.3rem;flex-shrink:0;}
+.ad-r{background:var(--danger);}
+.ad-a{background:var(--warn);}
+.ad-g{background:var(--success);}
+.alert-text{font-size:0.8rem;color:var(--s700);line-height:1.45;}
+.alert-time{font-family:var(--mono);font-size:0.68rem;color:var(--s400);margin-top:0.15rem;}
+
+/* TOAST */
+.toast{
+  position:fixed;bottom:1.5rem;right:1.5rem;
+  background:var(--s900);color:white;
+  padding:0.8rem 1.1rem;border-radius:var(--rsm);
+  font-size:0.82rem;z-index:9999;
+  opacity:0;transform:translateY(16px) scale(0.95);
+  transition:all 0.3s var(--spring);
+  display:flex;align-items:center;gap:0.55rem;
+  max-width:340px;line-height:1.4;
+  box-shadow:0 8px 32px rgba(0,0,0,0.2),0 2px 8px rgba(0,0,0,0.1);
+  pointer-events:none;
+}
+.toast.show{opacity:1;transform:translateY(0) scale(1);pointer-events:all;}
+.toast-icon{font-size:1rem;flex-shrink:0;}
+
+/* TOOLTIP */
+.tippy{
+  position:fixed;background:var(--s900);color:white;
+  padding:0.4rem 0.65rem;border-radius:6px;font-size:0.75rem;
+  pointer-events:none;opacity:0;transition:opacity 0.15s;
+  z-index:9000;max-width:220px;line-height:1.4;
+  box-shadow:0 4px 12px rgba(0,0,0,0.2);
+}
+.tippy.show{opacity:1;}
+
+/* SPOTLIGHT / ONBOARDING OVERLAY */
+.onboard-overlay{
+  position:fixed;inset:0;z-index:8000;
+  background:rgba(15,14,13,0.65);
+  backdrop-filter:blur(2px);
+  display:none;align-items:center;justify-content:center;
+}
+.onboard-overlay.show{display:flex;}
+.onboard-card{
+  background:var(--white);border-radius:var(--r);
+  padding:2.5rem;max-width:460px;width:90%;
+  box-shadow:0 32px 80px rgba(0,0,0,0.25);
+  animation:cardPop 0.4s var(--spring) both;
+}
+@keyframes cardPop{from{opacity:0;transform:scale(0.88)}to{opacity:1;transform:scale(1)}}
+.onboard-step{font-family:var(--mono);font-size:0.68rem;color:var(--s400);letter-spacing:0.1em;margin-bottom:0.5rem;}
+.onboard-title{font-size:1.5rem;font-weight:900;letter-spacing:-0.03em;margin-bottom:0.6rem;color:var(--s900);}
+.onboard-text{font-size:0.88rem;color:var(--s500);line-height:1.65;margin-bottom:1.5rem;}
+.onboard-actions{display:flex;justify-content:space-between;align-items:center;}
+.onboard-dots{display:flex;gap:0.4rem;}
+.onboard-dot{width:6px;height:6px;border-radius:50%;background:var(--s200);transition:all 0.2s;}
+.onboard-dot.active{background:var(--coral);width:16px;border-radius:3px;}
+.onboard-icon{font-size:2.5rem;margin-bottom:1rem;}
+
+/* KEYBOARD SHORTCUT MODAL */
+.kb-modal{
+  position:fixed;inset:0;z-index:8500;
+  background:rgba(15,14,13,0.55);backdrop-filter:blur(3px);
+  display:none;align-items:center;justify-content:center;
+}
+.kb-modal.show{display:flex;}
+.kb-modal-card{
+  background:var(--white);border-radius:var(--r);
+  padding:1.75rem;width:400px;max-width:90%;
+  box-shadow:0 24px 60px rgba(0,0,0,0.2);
+  animation:cardPop 0.3s var(--spring) both;
+}
+.kb-title{font-size:1rem;font-weight:800;margin-bottom:1.1rem;color:var(--s900);}
+.kb-row{display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0;border-bottom:1px solid var(--s50);}
+.kb-row:last-child{border-bottom:none;}
+.kb-action{font-size:0.82rem;color:var(--s700);}
+.kb-keys{display:flex;gap:0.25rem;}
+kbd{font-family:var(--mono);font-size:0.68rem;background:var(--s50);border:1px solid var(--s200);border-bottom:2px solid var(--s300);border-radius:4px;padding:0.15rem 0.4rem;color:var(--s700);}
+
+/* LOADING SKELETON */
+.skeleton{background:linear-gradient(90deg,var(--s100) 25%,var(--s50) 50%,var(--s100) 75%);background-size:400%;animation:shimmer 1.5s infinite;}
+@keyframes shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
+.skel-tile{height:120px;border-radius:var(--r);}
+.skel-chart{height:220px;border-radius:var(--r);}
+
+/* NUMBER COUNTER ANIMATION */
+.count-up{transition:all 0.1s;}
+
+/* CHART LEGEND */
+.chart-legend{display:flex;flex-wrap:wrap;gap:0.75rem;margin-bottom:0.75rem;}
+.legend-item{display:flex;align-items:center;gap:0.4rem;font-size:0.75rem;color:var(--s500);cursor:pointer;padding:0.2rem 0.5rem;border-radius:20px;transition:all 0.15s;}
+.legend-item:hover{background:var(--s50);}
+.legend-item.muted{opacity:0.35;}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.legend-line{width:16px;height:2.5px;border-radius:2px;flex-shrink:0;}
+
+/* OVERFLOW */
+.overflow-x{overflow-x:auto;}
+.overflow-x::-webkit-scrollbar{height:4px;}
+
+/* ═══════════════════════════════════════════
+   EMPTY / SPECIAL STATES
+═══════════════════════════════════════════ */
+.empty-state{text-align:center;padding:3rem 1rem;color:var(--s400);}
+.empty-icon{font-size:2.5rem;margin-bottom:0.75rem;opacity:0.4;}
+.empty-text{font-size:0.88rem;}
+
+/* UTILITY */
+.mb-4{margin-bottom:1rem;} .mb-5{margin-bottom:1.25rem;} .mb-6{margin-bottom:1.5rem;}
+.fw-700{font-weight:700;} .text-coral{color:var(--coral);}
+.gap-3{gap:0.75rem;}
+</style>
+</head>
+<body>
+
+<!-- TOOLTIP -->
+<div class="tippy" id="tip"></div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span class="toast-icon" id="toast-icon">✓</span><span id="toast-msg"></span></div>
+
+<!-- KEYBOARD SHORTCUTS MODAL -->
+<div class="kb-modal" id="kbModal" onclick="if(event.target===this)closeKb()">
+  <div class="kb-modal-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;">
+      <div class="kb-title" style="margin-bottom:0">⌨ Keyboard Shortcuts</div>
+      <button class="btn btn-ghost btn-icon" onclick="closeKb()">✕</button>
+    </div>
+    <div class="kb-row"><span class="kb-action">Open keyboard shortcuts</span><div class="kb-keys"><kbd>?</kbd></div></div>
+    <div class="kb-row"><span class="kb-action">Dashboard</span><div class="kb-keys"><kbd>1</kbd></div></div>
+    <div class="kb-row"><span class="kb-action">KPI Tree</span><div class="kb-keys"><kbd>2</kbd></div></div>
+    <div class="kb-row"><span class="kb-action">Power BI Spec</span><div class="kb-keys"><kbd>3</kbd></div></div>
+    <div class="kb-row"><span class="kb-action">Market Heatmap</span><div class="kb-keys"><kbd>4</kbd></div></div>
+    <div class="kb-row"><span class="kb-action">Impact Simulator</span><div class="kb-keys"><kbd>5</kbd></div></div>
+    <div class="kb-row"><span class="kb-action">Playbook</span><div class="kb-keys"><kbd>6</kbd></div></div>
+    <div class="kb-row"><span class="kb-action">Escalation</span><div class="kb-keys"><kbd>7</kbd></div></div>
+    <div class="kb-row"><span class="kb-action">Live Alerts</span><div class="kb-keys"><kbd>8</kbd></div></div>
+    <div class="kb-row"><span class="kb-action">Export data</span><div class="kb-keys"><kbd>E</kbd></div></div>
+    <div class="kb-row"><span class="kb-action">Reset simulator</span><div class="kb-keys"><kbd>R</kbd></div></div>
+    <div class="kb-row"><span class="kb-action">Focus search</span><div class="kb-keys"><kbd>/</kbd></div></div>
+    <div class="kb-row"><span class="kb-action">Close modal</span><div class="kb-keys"><kbd>Esc</kbd></div></div>
+    <div style="margin-top:1rem;padding-top:0.75rem;border-top:1px solid var(--s100);font-size:0.75rem;color:var(--s400);">Press any key to dismiss</div>
+  </div>
+</div>
+
+<!-- ONBOARDING OVERLAY -->
+<div class="onboard-overlay" id="onboardOverlay">
+  <div class="onboard-card" id="onboardCard">
+    <div class="onboard-step" id="onboard-step">01 / 05</div>
+    <div class="onboard-icon" id="onboard-icon">👋</div>
+    <div class="onboard-title" id="onboard-title">Welcome to REMT</div>
+    <div class="onboard-text" id="onboard-text">This is your Rider Experience Measurement Toolkit — a complete framework for understanding and improving every stage of the rider journey, from first app open to long-term retention.</div>
+    <div class="onboard-actions">
+      <div class="onboard-dots" id="onboard-dots"></div>
+      <div style="display:flex;gap:0.5rem;">
+        <button class="btn btn-ghost" onclick="skipOnboard()">Skip tour</button>
+        <button class="btn btn-coral" onclick="nextOnboard()">Next <span style="opacity:0.7">→</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark" onclick="nav('overview')" title="Dashboard">R</div>
+      <div>
+        <div class="logo-text">REMT<span>.</span></div>
+        <div class="logo-version">v2.4 · Portfolio</div>
+      </div>
+    </div>
+
+    <div class="sidebar-search">
+      <input type="text" class="search-input" id="searchInput" placeholder="Search pages… (/)" oninput="handleSearch(this.value)" onfocus="this.placeholder=''" onblur="this.placeholder='Search pages… (/)'" />
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <div class="nav-group-label">Overview</div>
+        <div class="nav-item active" id="nav-overview" onclick="nav('overview')">
+          <div class="nav-icon">⊞</div><span class="nav-label">Dashboard</span><span class="nav-shortcut">1</span>
+        </div>
+        <div class="nav-item" id="nav-kpi" onclick="nav('kpi')">
+          <div class="nav-icon">◉</div><span class="nav-label">KPI Tree</span><span class="nav-shortcut">2</span>
+        </div>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label">Analysis</div>
+        <div class="nav-item" id="nav-dashboard" onclick="nav('dashboard')">
+          <div class="nav-icon">▤</div><span class="nav-label">Power BI Spec</span><span class="nav-shortcut">3</span><span class="nav-badge">!</span>
+        </div>
+        <div class="nav-item" id="nav-heatmap" onclick="nav('heatmap')">
+          <div class="nav-icon">▦</div><span class="nav-label">Market Heatmap</span><span class="nav-shortcut">4</span>
+        </div>
+        <div class="nav-item" id="nav-simulator" onclick="nav('simulator')">
+          <div class="nav-icon">⊹</div><span class="nav-label">Impact Simulator</span><span class="nav-shortcut">5</span>
+        </div>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label">Playbook</div>
+        <div class="nav-item" id="nav-playbook" onclick="nav('playbook')">
+          <div class="nav-icon">☷</div><span class="nav-label">Market Playbook</span><span class="nav-shortcut">6</span>
+        </div>
+        <div class="nav-item" id="nav-escalation" onclick="nav('escalation')">
+          <div class="nav-icon">↑</div><span class="nav-label">Escalation Paths</span><span class="nav-shortcut">7</span>
+        </div>
+        <div class="nav-item" id="nav-alerts" onclick="nav('alerts')">
+          <div class="nav-icon">◎</div><span class="nav-label">Live Alerts</span><span class="nav-shortcut">8</span><span class="nav-badge" id="alertBadge">3</span>
+        </div>
+      </div>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="kb-hint">
+        <kbd>?</kbd> shortcuts &nbsp;·&nbsp; <kbd>/</kbd> search
+      </div>
+      <div class="sidebar-user" onclick="showToast('Profile settings coming soon','👤')">
+        <div class="user-avatar">PM</div>
+        <div>
+          <div class="user-name">Product Manager</div>
+          <div class="user-role">Rider Experience</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══ MAIN ═══ -->
+  <div class="main">
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="breadcrumb">
+          <span>REMT</span><span class="sep">/</span>
+          <span class="current" id="pageTitle">Dashboard</span>
+        </div>
+        <div class="live-badge"><span class="live-dot"></span>LIVE</div>
+      </div>
+      <div class="topbar-right">
+        <select class="seg-select" id="mktFilter" onchange="onFilterChange()">
+          <option value="all">🌍 All Markets</option>
+          <option value="EU">🇪🇺 EU</option>
+          <option value="APAC">🌏 APAC</option>
+          <option value="LATAM">🌎 LATAM</option>
+          <option value="NA">🌍 NA</option>
+        </select>
+        <select class="seg-select" id="vehFilter" onchange="onFilterChange()">
+          <option value="all">🛴 All Vehicles</option>
+          <option value="scooter">⚡ E-Scooter</option>
+          <option value="ebike">🚲 E-Bike</option>
+          <option value="emoped">🛵 E-Moped</option>
+        </select>
+        <button class="btn btn-icon" onclick="showKb()" title="Keyboard shortcuts (?)">⌨</button>
+        <button class="btn btn-icon" onclick="startOnboard()" title="Replay tour">?</button>
+        <button class="btn btn-coral" onclick="doExport()">↓ Export</button>
+      </div>
+    </div>
+
+    <!-- ════════ PAGE: OVERVIEW ════════ -->
+    <div class="page active" id="page-overview">
+
+      <div class="hero-banner">
+        <div class="hero-eyebrow">
+          <span style="background:rgba(255,255,255,0.15);padding:0.1rem 0.5rem;border-radius:4px">Portfolio Project</span>
+          Rider Experience Measurement Toolkit
+        </div>
+        <div class="hero-title">Your complete rider<br>journey framework</div>
+        <div class="hero-sub">6 KPI pillars · 38 metrics · 12 markets. Real-time threshold monitoring, local market playbooks, and an impact simulator to prioritise where to invest.</div>
+        <div class="hero-kpis">
+          <div class="hero-kpi"><div class="val" id="hv1">78%</div><div class="lbl">Activation</div></div>
+          <div class="hero-kpi"><div class="val" id="hv2">61%</div><div class="lbl">First Ride</div></div>
+          <div class="hero-kpi"><div class="val" id="hv3">4.31</div><div class="lbl">Quality</div></div>
+          <div class="hero-kpi"><div class="val" id="hv4">42%</div><div class="lbl">Retention</div></div>
+        </div>
+        <div class="hero-actions">
+          <button class="btn-white" onclick="nav('kpi')">Explore KPI Tree →</button>
+          <button class="btn-ghost-white" onclick="nav('simulator')">⊹ Try Simulator</button>
+          <button class="btn-ghost-white" onclick="nav('playbook')">☷ Playbook</button>
+        </div>
+      </div>
+
+      <!-- KPI Tiles -->
+      <div class="kpi-grid" id="kpiTiles">
+        <div class="kpi-tile" onclick="nav('kpi')" data-tip="Click to explore full KPI Tree for Activation">
+          <div class="kpi-top-bar" style="background:var(--coral)"></div>
+          <div class="kpi-label">Activation Rate</div>
+          <div class="kpi-value"><span id="tv1">78.4</span><sub>%</sub></div>
+          <div class="kpi-trend trend-up">▲ 2.1% vs last week</div>
+          <div class="kpi-bar"><div class="kpi-bar-fill" style="background:var(--coral);width:0%" data-fill="78%"></div></div>
+        </div>
+        <div class="kpi-tile" data-tip="First ride completion rate across all markets">
+          <div class="kpi-top-bar" style="background:var(--info)"></div>
+          <div class="kpi-label">First Ride</div>
+          <div class="kpi-value"><span id="tv2">61.2</span><sub>%</sub></div>
+          <div class="kpi-trend trend-up">▲ 0.8%</div>
+          <div class="kpi-bar"><div class="kpi-bar-fill" style="background:var(--info);width:0%" data-fill="61%"></div></div>
+        </div>
+        <div class="kpi-tile" data-tip="Average in-ride experience score out of 5.0">
+          <div class="kpi-top-bar" style="background:var(--success)"></div>
+          <div class="kpi-label">Quality Score</div>
+          <div class="kpi-value"><span id="tv3">4.31</span><sub>/5</sub></div>
+          <div class="kpi-trend trend-down">▼ 0.04 — needs attention</div>
+          <div class="kpi-bar"><div class="kpi-bar-fill" style="background:var(--success);width:0%" data-fill="86%"></div></div>
+        </div>
+        <div class="kpi-tile" data-tip="Helmet detection, speed compliance, geofencing">
+          <div class="kpi-top-bar" style="background:var(--warn)"></div>
+          <div class="kpi-label">Safety</div>
+          <div class="kpi-value"><span id="tv4">94.7</span><sub>%</sub></div>
+          <div class="kpi-trend trend-up">▲ 1.2%</div>
+          <div class="kpi-bar"><div class="kpi-bar-fill" style="background:var(--warn);width:0%" data-fill="95%"></div></div>
+        </div>
+        <div class="kpi-tile" data-tip="Support ticket CSAT and first contact resolution">
+          <div class="kpi-top-bar" style="background:var(--purple)"></div>
+          <div class="kpi-label">Support CSAT</div>
+          <div class="kpi-value"><span id="tv5">3.8</span><sub>/5</sub></div>
+          <div class="kpi-trend trend-flat">● Stable — watch FCR</div>
+          <div class="kpi-bar"><div class="kpi-bar-fill" style="background:var(--purple);width:0%" data-fill="76%"></div></div>
+        </div>
+        <div class="kpi-tile" data-tip="Riders returning after 30 days — cohort average">
+          <div class="kpi-top-bar" style="background:var(--pink)"></div>
+          <div class="kpi-label">30D Retention</div>
+          <div class="kpi-value"><span id="tv6">42.1</span><sub>%</sub></div>
+          <div class="kpi-trend trend-up">▲ 3.5% — best in 6 months</div>
+          <div class="kpi-bar"><div class="kpi-bar-fill" style="background:var(--pink);width:0%" data-fill="42%"></div></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Trend Chart -->
+        <div class="card col-2">
+          <div class="card-header">
+            <div>
+              <div class="card-title">8-Week KPI Trend</div>
+              <div class="card-sub">Normalised 0–100 scale · Click legend items to show/hide lines</div>
+            </div>
+            <div style="display:flex;gap:0.4rem;">
+              <button class="btn btn-ghost" style="font-size:0.75rem" onclick="showToast('Chart exported as PNG','📊')">↓ PNG</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="chart-legend" id="trendLegend"></div>
+            <canvas id="trendChart" height="200"></canvas>
+          </div>
+        </div>
+
+        <!-- Priorities -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Top Improvement Opportunities</div>
+              <div class="card-sub">Score = Impact × Effort⁻¹ × Strategic Weight</div>
+            </div>
+            <button class="btn btn-ghost" style="font-size:0.75rem" onclick="nav('simulator')">Simulate →</button>
+          </div>
+          <div class="card-body" id="priorityList"></div>
+        </div>
+
+        <!-- Recent Alerts -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Recent Alerts</div>
+              <div class="card-sub">Threshold breaches requiring attention</div>
+            </div>
+            <button class="btn btn-ghost" style="font-size:0.75rem" onclick="nav('alerts')">All alerts →</button>
+          </div>
+          <div class="card-body" id="alertPreview"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════ PAGE: KPI TREE ════════ -->
+    <div class="page" id="page-kpi">
+      <div class="section-header">
+        <div class="section-title">KPI Tree</div>
+        <div class="section-sub">Six rider journey pillars with leading &amp; lagging indicators. Click any pillar to expand metrics.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0.75rem;" id="pillarList"></div>
+    </div>
+
+    <!-- ════════ PAGE: POWER BI SPEC ════════ -->
+    <div class="page" id="page-dashboard">
+      <div class="section-header">
+        <div class="section-title">Power BI Dashboard Specification</div>
+        <div class="section-sub">Segmentation filters, performance thresholds, cohort analysis, and prioritisation scoring.</div>
+      </div>
+      <div class="tabs-wrap">
+        <button class="tab-btn active" onclick="switchTab('db','thresh',this)">📊 Thresholds</button>
+        <button class="tab-btn" onclick="switchTab('db','cohort',this)">🔄 Cohort Retention</button>
+        <button class="tab-btn" onclick="switchTab('db','tod',this)">⏰ Time of Day</button>
+        <button class="tab-btn" onclick="switchTab('db','radar',this)">🕸 Pillar Radar</button>
+      </div>
+      <div class="tab-pane active" id="db-thresh">
+        <div class="card"><div class="card-header"><div class="card-title">KPI Performance Thresholds</div><div class="card-sub">Green = on target · Amber = warning zone · Red = critical action needed</div></div><div class="card-body overflow-x"><table class="data-table" id="threshTable"></table></div></div>
+      </div>
+      <div class="tab-pane" id="db-cohort">
+        <div class="card"><div class="card-header"><div class="card-title">Monthly Cohort Retention</div><div class="card-sub">% of users returning in each subsequent month · Darker = stronger retention</div></div><div class="card-body overflow-x" id="cohortWrap"></div></div>
+      </div>
+      <div class="tab-pane" id="db-tod">
+        <div class="grid-2">
+          <div class="card"><div class="card-header"><div class="card-title">Ride Volume by Hour</div><div class="card-sub">% of daily rides per 2-hour block</div></div><div class="card-body"><canvas id="todChart" height="260"></canvas></div></div>
+          <div class="card"><div class="card-header"><div class="card-title">Avg Rating by Hour</div><div class="card-sub">In-ride experience score throughout the day</div></div><div class="card-body"><canvas id="ratingChart" height="260"></canvas></div></div>
+        </div>
+      </div>
+      <div class="tab-pane" id="db-radar">
+        <div class="grid-2">
+          <div class="card"><div class="card-header"><div class="card-title">Pillar Health Radar</div><div class="card-sub">Coral = current · Dashed = target threshold</div></div><div class="card-body" style="display:flex;justify-content:center;"><canvas id="radarChart" width="340" height="300"></canvas></div></div>
+          <div class="card"><div class="card-header"><div class="card-title">Effort vs Impact Matrix</div><div class="card-sub">Bubble size = strategic priority score · Top-left = quick wins</div></div><div class="card-body"><canvas id="matrixChart" height="280"></canvas></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════ PAGE: HEATMAP ════════ -->
+    <div class="page" id="page-heatmap">
+      <div class="section-header">
+        <div class="section-title">Market × Vehicle Heatmap</div>
+        <div class="section-sub">Composite rider experience score (0–100) by region and vehicle type. Click any cell for details.</div>
+      </div>
+      <div class="card"><div class="card-body" style="padding-top:1.4rem;"><div id="heatmapEl"></div></div></div>
+    </div>
+
+    <!-- ════════ PAGE: SIMULATOR ════════ -->
+    <div class="page" id="page-simulator">
+      <div class="section-header">
+        <div class="section-title">Impact Simulator</div>
+        <div class="section-sub">Drag the levers to model initiative impact on KPIs and estimated monthly revenue uplift.</div>
+      </div>
+      <div class="grid-2">
+        <div class="sim-panel">
+          <div style="font-size:0.88rem;font-weight:800;margin-bottom:1.1rem;letter-spacing:-0.015em;">⊹ Input Levers</div>
+          <div class="sim-group"><div class="sim-label">Onboarding Simplification<span class="sim-val" id="sv-ob">+0%</span></div><input type="range" min="0" max="30" value="0" id="s-ob" oninput="sim()"></div>
+          <div class="sim-group"><div class="sim-label">First Ride Pairing Fix<span class="sim-val" id="sv-pa">+0%</span></div><input type="range" min="0" max="20" value="0" id="s-pa" oninput="sim()"></div>
+          <div class="sim-group"><div class="sim-label">Battery UX Improvement<span class="sim-val" id="sv-ba">+0%</span></div><input type="range" min="0" max="15" value="0" id="s-ba" oninput="sim()"></div>
+          <div class="sim-group"><div class="sim-label">Win-Back Campaign (D10)<span class="sim-val" id="sv-wb">+0%</span></div><input type="range" min="0" max="25" value="0" id="s-wb" oninput="sim()"></div>
+          <div class="sim-group"><div class="sim-label">Support FCR Tooling<span class="sim-val" id="sv-fc">+0%</span></div><input type="range" min="0" max="20" value="0" id="s-fc" oninput="sim()"></div>
+          <div class="sim-group"><div class="sim-label">Helmet Compliance Program<span class="sim-val" id="sv-hm">+0%</span></div><input type="range" min="0" max="25" value="0" id="s-hm" oninput="sim()"></div>
+          <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+            <button class="btn btn-outline" style="flex:1;justify-content:center;" onclick="resetSim()">Reset levers</button>
+            <button class="btn btn-coral" style="flex:1;justify-content:center;" onclick="showToast('Simulation saved to report','📋')">Save scenario</button>
+          </div>
+        </div>
+        <div>
+          <div class="sim-panel">
+            <div style="font-size:0.88rem;font-weight:800;margin-bottom:0.9rem;letter-spacing:-0.015em;">Projected Impact</div>
+            <canvas id="simChart" height="200"></canvas>
+            <div class="sim-result" id="simResult">
+              <div class="sim-result-title">📈 Projected Outcomes</div>
+              <div class="sim-row"><span>Activation Rate</span><span class="sim-row-val" id="sr-ac">78.4% → 78.4%</span></div>
+              <div class="sim-row"><span>First Ride Success</span><span class="sim-row-val" id="sr-fr">61.2% → 61.2%</span></div>
+              <div class="sim-row"><span>30D Retention</span><span class="sim-row-val" id="sr-re">42.1% → 42.1%</span></div>
+              <div class="sim-row"><span>Support CSAT</span><span class="sim-row-val" id="sr-cs">3.80 → 3.80</span></div>
+              <div class="sim-row"><span>Safety Compliance</span><span class="sim-row-val" id="sr-sa">94.7% → 94.7%</span></div>
+              <div class="sim-row"><span>Est. Revenue Impact</span><span class="sim-row-val revenue" id="sr-rv">+€0 / month</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════ PAGE: PLAYBOOK ════════ -->
+    <div class="page" id="page-playbook">
+      <div class="section-header">
+        <div class="section-title">Market Playbook</div>
+        <div class="section-sub">Actionable guidance for local market teams — what to monitor, common failure modes, and recommended responses.</div>
+      </div>
+      <div class="tabs-wrap">
+        <button class="tab-btn active" onclick="switchTab('pb','mon',this)">👁 What to Monitor</button>
+        <button class="tab-btn" onclick="switchTab('pb','fail',this)">⚠ Failure Modes</button>
+        <button class="tab-btn" onclick="switchTab('pb','mit',this)">✓ Mitigations</button>
+      </div>
+      <div class="tab-pane active" id="pb-mon"><div class="grid-auto" id="pb-mon-grid"></div></div>
+      <div class="tab-pane" id="pb-fail"><div class="grid-auto" id="pb-fail-grid"></div></div>
+      <div class="tab-pane" id="pb-mit"><div class="grid-auto" id="pb-mit-grid"></div></div>
+    </div>
+
+    <!-- ════════ PAGE: ESCALATION ════════ -->
+    <div class="page" id="page-escalation">
+      <div class="section-header">
+        <div class="section-title">Escalation Paths</div>
+        <div class="section-sub">Structured response protocol from automated alerts through to executive briefings. Hover each level for detail.</div>
+      </div>
+      <div class="esc-path" id="escPath"></div>
+    </div>
+
+    <!-- ════════ PAGE: ALERTS ════════ -->
+    <div class="page" id="page-alerts">
+      <div class="section-header">
+        <div class="section-title">Live Alert Feed</div>
+        <div class="section-sub">Real-time threshold breaches and signals. Click to acknowledge.</div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">All Alerts</div>
+          <div style="display:flex;gap:0.4rem;">
+            <button class="btn btn-ghost" style="font-size:0.75rem" onclick="filterAlerts('all')">All</button>
+            <button class="btn btn-ghost" style="font-size:0.75rem" onclick="filterAlerts('critical')">🔴 Critical</button>
+            <button class="btn btn-ghost" style="font-size:0.75rem" onclick="filterAlerts('warning')">🟡 Warning</button>
+            <button class="btn btn-ghost" style="font-size:0.75rem" onclick="filterAlerts('info')">🟢 Info</button>
+          </div>
+        </div>
+        <div class="card-body" id="alertsContainer"></div>
+      </div>
+    </div>
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+/* ══════════════════════════════════════════════
+   NAVIGATION
+══════════════════════════════════════════════ */
+const titles = {overview:'Dashboard',kpi:'KPI Tree',dashboard:'Power BI Spec',heatmap:'Market Heatmap',simulator:'Impact Simulator',playbook:'Market Playbook',escalation:'Escalation Paths',alerts:'Live Alerts'};
+
+function nav(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const page = document.getElementById('page-'+id);
+  const navEl = document.getElementById('nav-'+id);
+  if(page) page.classList.add('active');
+  if(navEl) navEl.classList.add('active');
+  document.getElementById('pageTitle').textContent = titles[id] || id;
+  // lazy init
+  setTimeout(() => {
+    if(id==='overview') { drawTrend(); animateBars(); }
+    if(id==='simulator') drawSimChart();
+    if(id==='dashboard') { buildThresh(); drawToD(); drawRating(); }
+    if(id==='dashboard') buildCohort();
+  }, 60);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ══════════════════════════════════════════════
+   TABS
+══════════════════════════════════════════════ */
+function switchTab(prefix, id, btn) {
+  const page = btn.closest('.page');
+  page.querySelectorAll('.tab-pane[id^="'+prefix+'-"]').forEach(p=>p.classList.remove('active'));
+  page.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(prefix+'-'+id).classList.add('active');
+  btn.classList.add('active');
+  setTimeout(()=>{
+    if(prefix==='db'){
+      if(id==='tod'){drawToD();drawRating();}
+      if(id==='radar'){drawRadar();drawMatrix();}
+      if(id==='cohort')buildCohort();
+      if(id==='thresh')buildThresh();
+    }
+  },50);
+}
+
+/* ══════════════════════════════════════════════
+   KEYBOARD SHORTCUTS
+══════════════════════════════════════════════ */
+document.addEventListener('keydown', e => {
+  const focused = document.activeElement;
+  if(focused && (focused.tagName==='INPUT'||focused.tagName==='SELECT'||focused.tagName==='TEXTAREA')) {
+    if(e.key==='Escape') focused.blur();
+    return;
+  }
+  const map = {'1':'overview','2':'kpi','3':'dashboard','4':'heatmap','5':'simulator','6':'playbook','7':'escalation','8':'alerts'};
+  if(map[e.key]) { nav(map[e.key]); showToast('Navigated to '+titles[map[e.key]],'⌨'); }
+  if(e.key==='?') showKb();
+  if(e.key==='/'){ e.preventDefault(); document.getElementById('searchInput').focus(); }
+  if(e.key.toLowerCase()==='e') doExport();
+  if(e.key.toLowerCase()==='r') { resetSim(); showToast('Simulator reset','↺'); }
+  if(e.key==='Escape') closeKb();
+});
+
+function showKb(){ document.getElementById('kbModal').classList.add('show'); }
+function closeKb(){ document.getElementById('kbModal').classList.remove('show'); }
+
+/* ══════════════════════════════════════════════
+   SEARCH
+══════════════════════════════════════════════ */
+const navMap = {overview:'Dashboard',kpi:'KPI Tree',dashboard:'Power BI Spec',heatmap:'Heatmap',simulator:'Simulator',playbook:'Playbook',escalation:'Escalation',alerts:'Alerts'};
+function handleSearch(q) {
+  if(!q) { document.querySelectorAll('.nav-item').forEach(n=>n.style.display=''); return; }
+  document.querySelectorAll('.nav-item').forEach(n => {
+    const id = n.id.replace('nav-','');
+    const label = navMap[id]||'';
+    n.style.display = label.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
+  });
+}
+
+/* ══════════════════════════════════════════════
+   TOOLTIP
+══════════════════════════════════════════════ */
+const tip = document.getElementById('tip');
+document.querySelectorAll('[data-tip]').forEach(el => {
+  el.addEventListener('mouseenter', e => {
+    tip.textContent = el.dataset.tip;
+    tip.classList.add('show');
+  });
+  el.addEventListener('mousemove', e => {
+    tip.style.left = (e.clientX + 12) + 'px';
+    tip.style.top = (e.clientY - 28) + 'px';
+  });
+  el.addEventListener('mouseleave', () => tip.classList.remove('show'));
+});
+
+/* ══════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════ */
+let toastTimer;
+function showToast(msg, icon='✓') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  document.getElementById('toast-icon').textContent = icon;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+/* ══════════════════════════════════════════════
+   ONBOARDING TOUR
+══════════════════════════════════════════════ */
+const onboardSteps = [
+  {icon:'👋',title:'Welcome to REMT',text:'This is your Rider Experience Measurement Toolkit — a complete framework for understanding every stage of the rider journey, from first app open to long-term retention.',step:'01 / 05'},
+  {icon:'◉',title:'KPI Tree',text:'Browse all 6 pillars and 38+ metrics organised by journey stage. Click any pillar row to expand it and see individual metrics with live trends.',step:'02 / 05'},
+  {icon:'⊹',title:'Impact Simulator',text:'Drag levers to model the impact of different initiatives — see projected KPI changes and estimated monthly revenue uplift in real time.',step:'03 / 05'},
+  {icon:'▦',title:'Market Heatmap',text:'The heatmap shows composite rider experience scores across 4 regions × 4 vehicle types. Click any cell to see the detail. Greener = better.',step:'04 / 05'},
+  {icon:'⌨',title:'Keyboard Shortcuts',text:'Navigate faster with keyboard shortcuts. Press 1–8 to jump between pages, / to search, ? to see all shortcuts, and E to export data.',step:'05 / 05'},
+];
+let onboardIdx = 0;
+
+function startOnboard() {
+  onboardIdx = 0;
+  renderOnboard();
+  document.getElementById('onboardOverlay').classList.add('show');
+}
+function renderOnboard() {
+  const s = onboardSteps[onboardIdx];
+  document.getElementById('onboard-step').textContent = s.step;
+  document.getElementById('onboard-icon').textContent = s.icon;
+  document.getElementById('onboard-title').textContent = s.title;
+  document.getElementById('onboard-text').textContent = s.text;
+  // dots
+  const dots = document.getElementById('onboard-dots');
+  dots.innerHTML = onboardSteps.map((_,i)=>`<div class="onboard-dot ${i===onboardIdx?'active':''}"></div>`).join('');
+  // last step: change button
+  const btn = document.querySelector('.onboard-card .btn-coral');
+  btn.textContent = onboardIdx === onboardSteps.length-1 ? 'Get started ✓' : 'Next →';
+  // animate card
+  document.getElementById('onboardCard').style.animation = 'none';
+  setTimeout(()=>document.getElementById('onboardCard').style.animation = 'cardPop 0.3s var(--spring) both',10);
+}
+function nextOnboard() {
+  if(onboardIdx < onboardSteps.length-1) { onboardIdx++; renderOnboard(); }
+  else skipOnboard();
+}
+function skipOnboard() {
+  document.getElementById('onboardOverlay').classList.remove('show');
+  showToast('Tour complete! Press ? for keyboard shortcuts','🎉');
+}
+
+// Show tour on first visit
+const toured = sessionStorage.getItem('remt_toured');
+if(!toured) { setTimeout(startOnboard, 600); sessionStorage.setItem('remt_toured','1'); }
+
+/* ══════════════════════════════════════════════
+   DATA
+══════════════════════════════════════════════ */
+const pillars = [
+  {id:'ac',icon:'🚀',name:'Activation',desc:'Users completing onboarding and ready to ride',score:'78.4%',trend:'▲2.1%',tu:true,color:'#E8503A',bg:'rgba(232,80,58,0.09)',metrics:[
+    {n:'App → Registration',v:'78.4%',t:'▲2.1%',u:true,f:78},{n:'KYC Pass Rate',v:'91.2%',t:'▲0.5%',u:true,f:91},
+    {n:'Payment Method Added',v:'84.7%',t:'▼0.3%',u:false,f:85},{n:'Onboarding Completion',v:'71.1%',t:'▲1.8%',u:true,f:71},
+    {n:'Time-to-Activate (median)',v:'6.2 min',t:'▼0.4 min',u:true,f:62},{n:'EU Activation Rate',v:'82.3%',t:'▲1.0%',u:true,f:82},
+  ]},
+  {id:'fr',icon:'⚡',name:'First Ride Success',desc:"Quality and completion of the rider's very first trip",score:'61.2%',trend:'▲0.8%',tu:true,color:'#2563EB',bg:'rgba(37,99,235,0.07)',metrics:[
+    {n:'First Ride Completion',v:'61.2%',t:'▲0.8%',u:true,f:61},{n:'Avg. Unlock Time',v:'12.4s',t:'▼1.1s',u:true,f:60},
+    {n:'First Ride Rating ≥4★',v:'74.3%',t:'▲0.6%',u:true,f:74},{n:'Pairing Flow Drop-off',v:'18.7%',t:'▼2.1%',u:true,f:19},
+    {n:'First Ride NPS',v:'+28',t:'▲3 pts',u:true,f:65},
+  ]},
+  {id:'rq',icon:'✦',name:'Ride Quality',desc:'In-ride satisfaction, smoothness, and performance signals',score:'4.31/5',trend:'▼0.04',tu:false,color:'#1F9E6A',bg:'rgba(31,158,106,0.08)',metrics:[
+    {n:'Average Ride Rating',v:'4.31/5',t:'▼0.04',u:false,f:86},{n:'Interruptions / 100 rides',v:'2.8',t:'▼0.3',u:true,f:28},
+    {n:'Battery Anxiety Events',v:'8.2%',t:'▼1.2%',u:true,f:8},{n:'Avg Trip Distance',v:'3.2 km',t:'▲0.1 km',u:true,f:64},
+    {n:'In-App Help Opens / ride',v:'0.14',t:'▼0.02',u:true,f:14},{n:'Vehicle Reported Faulty',v:'1.4%',t:'▼0.2%',u:true,f:14},
+  ]},
+  {id:'sc',icon:'🛡',name:'Safety & Compliance',desc:'Helmet usage, speed limits, geofencing, incident signals',score:'94.7%',trend:'▲1.2%',tu:true,color:'#D97706',bg:'rgba(217,119,6,0.08)',metrics:[
+    {n:'Helmet Detection Rate',v:'61.4%',t:'▲3.2%',u:true,f:61},{n:'Speed Limit Compliance',v:'97.3%',t:'▲0.4%',u:true,f:97},
+    {n:'Geofence Violations / 1K',v:'4.1',t:'▼0.8',u:true,f:41},{n:'Incident Rate',v:'0.12%',t:'▼0.01%',u:true,f:12},
+    {n:'No-Go Zone Entries',v:'0.8%',t:'▼0.3%',u:true,f:8},
+  ]},
+  {id:'su',icon:'◈',name:'Support Resolution',desc:'Ticket volume, resolution speed, and satisfaction signals',score:'3.8/5',trend:'● Stable',tu:null,color:'#7C3AED',bg:'rgba(124,58,237,0.08)',metrics:[
+    {n:'Support Contact Rate',v:'7.2%',t:'▼0.5%',u:true,f:72},{n:'Resolution CSAT',v:'3.8/5',t:'● Stable',u:null,f:76},
+    {n:'First Contact Resolution',v:'68.4%',t:'▲1.1%',u:true,f:68},{n:'Avg Resolution Time',v:'4.2h',t:'▼0.3h',u:true,f:58},
+    {n:'Refund Rate',v:'3.1%',t:'▼0.2%',u:true,f:31},
+  ]},
+  {id:'re',icon:'◎',name:'Retention',desc:'Repeat usage, cohort survival, and churn prevention signals',score:'42.1%',trend:'▲3.5%',tu:true,color:'#DB2777',bg:'rgba(219,39,119,0.08)',metrics:[
+    {n:'7-Day Retention',v:'58.3%',t:'▲2.1%',u:true,f:58},{n:'30-Day Retention',v:'42.1%',t:'▲3.5%',u:true,f:42},
+    {n:'90-Day Retention',v:'28.7%',t:'▲1.8%',u:true,f:29},{n:'Rides / Active User / Mo',v:'6.4',t:'▲0.7',u:true,f:64},
+    {n:'Churn Trigger (14D no ride)',v:'24.1%',t:'▼1.3%',u:true,f:24},{n:'Subscription Conversion',v:'12.8%',t:'▲0.9%',u:true,f:13},
+  ]},
+];
+
+/* BUILD KPI TREE */
+const pillarList = document.getElementById('pillarList');
+pillars.forEach(p => {
+  const card = document.createElement('div');
+  card.className = 'pillar-card';
+  card.innerHTML = `
+    <div class="pillar-row" onclick="togglePillar('pb-${p.id}',this)">
+      <div class="pillar-icon-wrap" style="background:${p.bg}">${p.icon}</div>
+      <div style="flex:1">
+        <div class="pillar-name">${p.name}</div>
+        <div class="pillar-desc">${p.desc}</div>
+      </div>
+      <div class="pillar-meta">
+        <div class="pillar-score" style="color:${p.color}">${p.score}</div>
+        <div class="pillar-trend ${p.tu===true?'trend-up':p.tu===false?'trend-down':'trend-flat'}">${p.trend}</div>
+      </div>
+      <div class="pillar-chevron" id="ch-${p.id}">▶</div>
+    </div>
+    <div class="pillar-body" id="pb-${p.id}">
+      <div class="metrics-grid">
+        ${p.metrics.map(m=>`<div class="metric-item">
+          <div class="metric-item-label">${m.n}</div>
+          <div class="metric-item-val">${m.v}</div>
+          <div class="metric-item-trend ${m.u===true?'trend-up':m.u===false?'trend-down':'trend-flat'}">${m.t}</div>
+          <div class="prog" style="margin-top:0.4rem"><div class="prog-fill" style="background:${p.color};width:${m.f}%"></div></div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  pillarList.appendChild(card);
+});
+
+function togglePillar(id) {
+  const body = document.getElementById(id);
+  const ch = document.getElementById('ch-'+id.replace('pb-',''));
+  const card = body.closest('.pillar-card');
+  const open = body.classList.contains('open');
+  document.querySelectorAll('.pillar-body').forEach(b => b.classList.remove('open'));
+  document.querySelectorAll('.pillar-chevron').forEach(c => { c.style.transform=''; c.closest('.pillar-card').classList.remove('open'); });
+  if(!open) {
+    body.classList.add('open');
+    ch.style.transform = 'rotate(90deg)';
+    card.classList.add('open');
+  }
+}
+
+/* PRIORITIES */
+const pris = [
+  {t:'Onboarding Friction',d:'18% lost activations — KYC drop-off',s:94,c:'#E8503A',page:'simulator'},
+  {t:'First Ride Funnel',d:'Pairing UX → 8.3% abort rate',s:88,c:'#2563EB',page:'simulator'},
+  {t:'Retention Win-Back',d:'No D10 automation — churn preventable',s:81,c:'#DB2777',page:'simulator'},
+  {t:'Helmet Compliance',d:'61% detection vs 70% target',s:76,c:'#D97706',page:'playbook'},
+  {t:'Support CSAT',d:'FCR below benchmark in APAC/LATAM',s:71,c:'#7C3AED',page:'playbook'},
+  {t:'Battery UX',d:'8.2% anxiety events causing ride drops',s:64,c:'#1F9E6A',page:'simulator'},
+];
+const priEl = document.getElementById('priorityList');
+pris.forEach((p,i) => {
+  const row = document.createElement('div');
+  row.style.cssText='display:flex;align-items:center;gap:0.85rem;padding:0.65rem 0.4rem;border-bottom:1px solid var(--s50);cursor:pointer;border-radius:var(--rxs);transition:background 0.1s;';
+  row.innerHTML=`<div style="font-family:var(--mono);font-size:0.68rem;color:var(--s300);width:20px;flex-shrink:0;font-weight:600">${String(i+1).padStart(2,'0')}</div>
+    <div style="width:6px;height:6px;border-radius:50%;background:${p.c};flex-shrink:0"></div>
+    <div style="flex:1"><div style="font-size:0.83rem;font-weight:700;color:var(--s900)">${p.t}</div><div style="font-size:0.73rem;color:var(--s400);margin-top:0.1rem">${p.d}</div></div>
+    <div style="font-family:var(--mono);font-size:0.95rem;font-weight:700;color:${p.c};flex-shrink:0">${p.s}</div>
+    <div style="font-size:0.7rem;color:var(--s300)">→</div>`;
+  row.onmouseenter=()=>row.style.background='var(--s50)';
+  row.onmouseleave=()=>row.style.background='';
+  row.onclick=()=>{ nav(p.page); showToast('Viewing: '+p.t,'📌'); };
+  priEl.appendChild(row);
+});
+
+/* ALERTS */
+const alertsData = [
+  {sev:'critical',dot:'ad-r',text:'First Ride Success dropped below 60% warning threshold in APAC (currently 58.1%). Pairing flow investigation recommended.',time:'2 min ago'},
+  {sev:'critical',dot:'ad-r',text:'Support ticket volume spike: +47% above 7-day avg in LATAM. Possible vehicle issue in São Paulo.',time:'18 min ago'},
+  {sev:'warning',dot:'ad-a',text:'Helmet detection in EU fell to 58% — below 61% baseline. Targeted compliance campaign recommended.',time:'1h ago'},
+  {sev:'warning',dot:'ad-a',text:'Geofence violations in NA up 22% vs prior week. Map clarity update scheduled for next release.',time:'2h ago'},
+  {sev:'warning',dot:'ad-a',text:'Battery anxiety events at 11.4% on E-Moped fleet during rain periods. UX messaging review needed.',time:'3h ago'},
+  {sev:'info',dot:'ad-g',text:'EU Activation Rate hit 82.3% — new all-time high. KYC optimisation showing strong results.',time:'4h ago'},
+  {sev:'info',dot:'ad-g',text:'30-Day retention crossed 42% for the first time. D10 win-back campaign performing above expectation.',time:'6h ago'},
+  {sev:'info',dot:'ad-g',text:'NA E-Bike Quality Score reached 4.42 — highest across all market/vehicle segments.',time:'8h ago'},
+];
+
+function mkAlert(a) {
+  const el = document.createElement('div');
+  el.className='alert-item'; el.dataset.sev=a.sev;
+  el.innerHTML=`<div class="alert-dot ${a.dot}"></div><div><div class="alert-text">${a.text}</div><div class="alert-time">${a.time}</div></div>`;
+  el.onclick=()=>{ el.style.opacity='0.5'; showToast('Alert acknowledged','✓'); setTimeout(()=>el.style.opacity='1',1500); };
+  return el;
+}
+alertsData.slice(0,3).forEach(a=>document.getElementById('alertPreview').appendChild(mkAlert(a)));
+alertsData.forEach(a=>document.getElementById('alertsContainer').appendChild(mkAlert(a)));
+function filterAlerts(sev) {
+  document.querySelectorAll('#alertsContainer .alert-item').forEach(el=>{
+    el.style.display=(sev==='all'||el.dataset.sev===sev)?'flex':'none';
+  });
+}
+
+/* ══════════════════════════════════════════════
+   THRESHOLD TABLE
+══════════════════════════════════════════════ */
+function buildThresh(){
+  const rows=[
+    ['Activation Rate','≥ 80%','70–80%','< 70%','78.4%','warning'],
+    ['First Ride Success','≥ 65%','55–65%','< 55%','61.2%','warning'],
+    ['Ride Quality Score','≥ 4.5','4.0–4.5','< 4.0','4.31','warning'],
+    ['Safety Compliance','≥ 96%','92–96%','< 92%','94.7%','warning'],
+    ['Resolution CSAT','≥ 4.2','3.5–4.2','< 3.5','3.8','warning'],
+    ['30D Retention','≥ 50%','35–50%','< 35%','42.1%','warning'],
+    ['Helmet Detection','≥ 70%','60–70%','< 60%','61.4%','warning'],
+    ['Incident Rate','< 0.1%','0.1–0.2%','> 0.2%','0.12%','warning'],
+  ];
+  const t = document.getElementById('threshTable');
+  t.innerHTML=`<thead><tr><th>KPI</th><th>Target ✓</th><th>Warning ⚠</th><th>Critical ✕</th><th>Current</th><th>Status</th></tr></thead><tbody>
+  ${rows.map(r=>`<tr><td style="font-weight:700">${r[0]}</td>
+    <td><span class="badge bg">${r[1]}</span></td>
+    <td><span class="badge ba">${r[2]}</span></td>
+    <td><span class="badge br">${r[3]}</span></td>
+    <td class="mono">${r[4]}</td>
+    <td><span class="badge ba">⚠ Warning</span></td>
+  </tr>`).join('')}</tbody>`;
+}
+buildThresh();
+
+/* COHORT TABLE */
+function buildCohort(){
+  const cs=['Jan','Feb','Mar','Apr','May','Jun'];
+  const ms=['M+1','M+2','M+3','M+4','M+5'];
+  const d={'Jan':[100,68,52,41,33],'Feb':[100,71,55,43,null],'Mar':[100,70,53,null,null],'Apr':[100,73,null,null,null],'May':[100,74,null,null,null],'Jun':[100,null,null,null,null]};
+  let h=`<table class="data-table"><thead><tr><th>Cohort</th>${ms.map(m=>`<th>${m}</th>`).join('')}</tr></thead><tbody>`;
+  cs.forEach(c=>{
+    h+=`<tr><td style="font-weight:700">${c} '25</td>`;
+    ms.forEach((_,i)=>{
+      const v=d[c][i];
+      if(v===null){h+=`<td style="color:var(--s200)">—</td>`;return;}
+      const bg=v>=70?'rgba(31,158,106,0.15)':v>=50?'rgba(217,119,6,0.12)':v>=30?'rgba(232,80,58,0.1)':'rgba(220,38,38,0.1)';
+      const col=v>=70?'var(--success)':v>=50?'var(--warn)':v>=30?'var(--coral)':'var(--danger)';
+      h+=`<td style="background:${bg};color:${col};font-family:var(--mono);font-weight:600">${v}%</td>`;
+    });
+    h+=`</tr>`;
+  });
+  document.getElementById('cohortWrap').innerHTML=h+'</tbody></table>';
+}
+
+/* HEATMAP */
+const mkts=['EU','APAC','LATAM','NA'], vehs=['E-Scooter','E-Bike','E-Moped','Car-Share'];
+const hmData={'EU':{'E-Scooter':{s:87,d:'+3.2'},'E-Bike':{s:82,d:'+1.1'},'E-Moped':{s:79,d:'+0.5'},'Car-Share':{s:71,d:'-0.8'}},'APAC':{'E-Scooter':{s:69,d:'-2.1'},'E-Bike':{s:74,d:'+1.8'},'E-Moped':{s:65,d:'-1.4'},'Car-Share':{s:61,d:'+0.3'}},'LATAM':{'E-Scooter':{s:72,d:'+0.8'},'E-Bike':{s:68,d:'-0.4'},'E-Moped':{s:63,d:'+1.2'},'Car-Share':{s:58,d:'+2.1'}},'NA':{'E-Scooter':{s:78,d:'+1.5'},'E-Bike':{s:81,d:'+2.3'},'E-Moped':{s:75,d:'+0.9'},'Car-Share':{s:73,d:'+0.2'}}};
+function hmColor(s){return s>=80?'rgba(31,158,106,0.15)':s>=70?'rgba(232,80,58,0.12)':s>=65?'rgba(217,119,6,0.13)':'rgba(220,38,38,0.11)';}
+function hmText(s){return s>=80?'var(--success)':s>=70?'var(--coral)':s>=65?'var(--warn)':'var(--danger)';}
+let hmHtml=`<div style="display:grid;grid-template-columns:80px repeat(${vehs.length},1fr);gap:7px;margin-bottom:8px;"><div></div>${vehs.map(v=>`<div class="hm-label">${v}</div>`).join('')}</div>`;
+mkts.forEach(m=>{
+  hmHtml+=`<div style="display:grid;grid-template-columns:80px repeat(${vehs.length},1fr);gap:7px;margin-bottom:7px;align-items:center;"><div class="hm-row-label">${m}</div>`;
+  vehs.forEach(v=>{
+    const c=hmData[m][v],pos=c.d.startsWith('+');
+    hmHtml+=`<div class="hm-cell" style="background:${hmColor(c.s)}" onclick="showToast('${m} · ${v}: Score ${c.s}, MoM ${c.d}%','▦')">
+      <div class="hm-score" style="color:${hmText(c.s)}">${c.s}</div>
+      <div class="hm-delta" style="color:${pos?'var(--success)':'var(--danger)'}">${c.d}%</div>
+    </div>`;
+  });
+  hmHtml+=`</div>`;
+});
+document.getElementById('heatmapEl').innerHTML=hmHtml;
+
+/* ESCALATION */
+const escSteps=[
+  {n:'L0',lv:'AUTOMATED',t:'Self-Serve & Auto-Alerts',d:'Smart Slack alerts, auto-ticket creation for threshold breaches, dashboard flags with recommended next action.',sla:'Response: Real-time',first:true},
+  {n:'L1',lv:'LOCAL TEAM',t:'Market Operations Manager',d:'First responder for support spikes, vehicle issues, compliance alerts. Daily 15-min standup review of KPI health.',sla:'SLA: Acknowledge within 1 hour'},
+  {n:'L2',lv:'REGIONAL',t:'Regional Director of Operations',d:'Escalated when L1 cannot resolve within 4 hours, when KPI is in Critical zone for 24h+, or safety incident involved.',sla:'SLA: Action plan within 4 hours'},
+  {n:'L3',lv:'GLOBAL',t:'Product & Analytics Team',d:'Systemic issues requiring product changes, data pipeline fixes, or new measurement frameworks. Cross-market patterns.',sla:'SLA: Triage within 24 hours'},
+  {n:'L4',lv:'EXECUTIVE',t:'VP Operations / C-Suite',d:'Safety incidents with regulatory implications, sustained KPI degradation >7 days, or media-risk events.',sla:'SLA: Briefed within 2 hours of L3 flag'},
+];
+const ep=document.getElementById('escPath');
+escSteps.forEach((s,i)=>{
+  const row=document.createElement('div');
+  row.className='esc-row';
+  row.innerHTML=`<div class="esc-spine">
+    <div class="esc-dot" style="${s.first?'background:var(--coral);color:white;border-color:var(--coral)':''}">${s.n}</div>
+    ${i<escSteps.length-1?'<div class="esc-connector"></div>':''}
+  </div>
+  <div style="flex:1">
+    <div class="esc-card">
+      <div class="esc-level">${s.lv}</div>
+      <div class="esc-title">${s.t}</div>
+      <div class="esc-desc">${s.d}</div>
+      <div class="esc-sla">${s.sla}</div>
+    </div>
+  </div>`;
+  ep.appendChild(row);
+});
+
+/* PLAYBOOK */
+const pbData = {
+  mon:[
+    {h:'Daily Activation Funnel',t:'Track Download → Register → KYC → Payment → Session. Alert if any step drops >3% vs 7-day rolling average. Segment by market and time-of-day.'},
+    {h:'First Ride Completion Rate',t:'Monitor hourly in launch markets. Segment by time-of-day, vehicle type, and cohort (new vs returning). Surface in real-time ops dashboard.'},
+    {h:'Safety Signal Dashboard',t:'Helmet detection rate, geofence violations, speed compliance. Daily review; weekly trend meeting with ops teams. Threshold breach triggers auto-alert.'},
+    {h:'Support Volume & CSAT',t:'Tickets per 1,000 rides. Track FCR and CSAT daily. Spike in volume = potential product or ops incident. Escalate if >20% above 7-day average.'},
+    {h:'7-Day Cohort Retention',t:'Weekly cohort table: D1, D7, D14, D30. Benchmark vs market baseline. Early D1 drop = onboarding or first-ride friction.'},
+    {h:'Peak Hour Performance',t:'16:00–20:00 accounts for 40%+ of daily rides. Monitor vehicle availability, unlock failure rate, and app load specifically during these windows.'},
+  ],
+  fail:[
+    {h:'KYC Verification Bottleneck',t:'High drop-off at ID verification in strict-document markets. Root causes: OCR failure, unsupported ID formats, slow third-party API response times.'},
+    {h:'Bluetooth Pairing Failure',t:'18.7% of first-ride attempts fail at pairing. Bluetooth permission not granted, firmware incompatibility, or low signal in dense urban environments.'},
+    {h:'Battery Anxiety Drop-off',t:'Riders abandon rides when battery shows <25% — often not a real range issue but inaccurate telemetry or poor UI communication of expected range.'},
+    {h:'Geofence Confusion',t:'Riders ending rides outside valid zones, triggering penalty fees. Caused by unclear in-app map, poor GPS accuracy in urban canyons, or delayed geofence sync.'},
+    {h:'Support Ticket Loop',t:'Repeat contacts for the same unresolved issue. FCR below 68% in APAC and LATAM due to agent tooling gaps and outdated knowledge base.'},
+    {h:'Day-14 Retention Cliff',t:'24.1% of users churn within 14 days of no ride. No automated re-engagement trigger in place. Win-back campaigns launching too late (day 21+).'},
+  ],
+  mit:[
+    {h:'KYC Flow Optimisation',t:'A/B test progressive KYC (defer full ID to 2nd ride). Add real-time photo guidance (lighting, angle). Integrate fallback verification partner for unsupported IDs.'},
+    {h:'Guided First-Ride Experience',t:'Contextual tooltips during pairing. QR fallback if Bluetooth fails. In-app tutorial for users with <2 sessions. Reduce unlock steps by 40%.'},
+    {h:'Battery UX Improvements',t:'Show estimated distance, not just %. Recalibrate battery telemetry. Add "Good to go" badge for vehicles with >30% charge. A/B test range confidence messaging.'},
+    {h:'Geofence Clarity Upgrade',t:'Animated zone boundaries on end-ride map. Push notification when user approaches boundary. Post-trip education for first-time out-of-zone parkers.'},
+    {h:'Win-Back Automation',t:'Trigger personalised push + email at D10 inactivity. Include route suggestion or discount. Test 3-message sequence. Target: pull D14 retention to 65%+.'},
+    {h:'Support Tooling Enhancement',t:'Knowledge base widget in agent console. One-click refund for qualifying cases (<€10, first incident). Weekly calibration sessions on top failure categories.'},
+  ],
+};
+const pbColors = {mon:['pc-coral','pct-coral','#E8503A'],fail:['pc-amber','pct-amber','#D97706'],mit:['pc-green','pct-green','#1F9E6A']};
+const pbTags = {mon:'Monitor',fail:'Failure Mode',mit:'Mitigation'};
+['mon','fail','mit'].forEach(k=>{
+  const [cc,tc,border] = pbColors[k];
+  const grid = document.getElementById(`pb-${k}-grid`);
+  pbData[k].forEach(c=>{
+    const el=document.createElement('div');
+    el.className=`pb-card ${cc}`;
+    el.style.setProperty('--border-color',border);
+    el.innerHTML=`<div class="pb-tag ${tc}">${pbTags[k]}</div><h4>${c.h}</h4><p>${c.t}</p>`;
+    el.onclick=()=>showToast(c.h,'📌');
+    grid.appendChild(el);
+  });
+});
+
+// Inject pb-card border color
+document.querySelectorAll('.pc-coral::before').forEach(e=>e.style.background='var(--coral)');
+
+/* ══════════════════════════════════════════════
+   CHARTS
+══════════════════════════════════════════════ */
+const lines = [
+  {key:'Activation',c:'#E8503A',data:[72,74,73,75,76,77,77.5,78.4]},
+  {key:'First Ride',c:'#2563EB',data:[58,59,59.5,60,60.2,60.8,61,61.2]},
+  {key:'Quality×20',c:'#1F9E6A',data:[82,84,83,85,86,85,86,86.2]},
+  {key:'Safety',c:'#D97706',data:[93,93.5,94,93.8,94.2,94.5,94.6,94.7]},
+  {key:'Retention',c:'#DB2777',data:[38,39,38.5,40,40.5,41,41.5,42.1]},
+];
+const hiddenLines = new Set();
+
+// Build legend
+const legendEl = document.getElementById('trendLegend');
+lines.forEach(l=>{
+  const item = document.createElement('div');
+  item.className='legend-item'; item.id='leg-'+l.key;
+  item.innerHTML=`<div class="legend-line" style="background:${l.c}"></div>${l.key}`;
+  item.onclick=()=>{
+    if(hiddenLines.has(l.key)) hiddenLines.delete(l.key);
+    else hiddenLines.add(l.key);
+    item.classList.toggle('muted');
+    drawTrend();
+  };
+  legendEl.appendChild(item);
+});
+
+function drawTrend(){
+  const c = document.getElementById('trendChart'); if(!c)return;
+  const ctx = c.getContext('2d');
+  c.width = c.offsetWidth; c.height = 200;
+  const W=c.width, H=c.height, pL=42, pR=16, pT=10, pB=32;
+  ctx.clearRect(0,0,W,H);
+  const labels=['W1','W2','W3','W4','W5','W6','W7','W8'];
+  // grid
+  for(let i=0;i<=4;i++){
+    const y=pT+(H-pT-pB)*(1-i/4);
+    ctx.strokeStyle='rgba(0,0,0,0.05)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(pL,y); ctx.lineTo(W-pR,y); ctx.stroke();
+    ctx.fillStyle='rgba(0,0,0,0.22)'; ctx.font='9px IBM Plex Mono'; ctx.textAlign='right';
+    ctx.fillText((i*25)+'%', pL-6, y+3);
+  }
+  labels.forEach((l,i)=>{
+    const x=pL+(W-pL-pR)*i/(labels.length-1);
+    ctx.fillStyle='rgba(0,0,0,0.22)'; ctx.textAlign='center'; ctx.font='9px IBM Plex Mono';
+    ctx.fillText(l, x, H-pB+15);
+  });
+  // gradient areas
+  lines.forEach(ds=>{
+    if(hiddenLines.has(ds.key)) return;
+    const pts = ds.data.map((v,i)=>({x:pL+(W-pL-pR)*i/(ds.data.length-1),y:pT+(H-pT-pB)*(1-v/100)}));
+    const grad=ctx.createLinearGradient(0,pT,0,H-pB);
+    grad.addColorStop(0,ds.c+'33'); grad.addColorStop(1,ds.c+'00');
+    ctx.fillStyle=grad;
+    ctx.beginPath();
+    pts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
+    ctx.lineTo(pts[pts.length-1].x, H-pB); ctx.lineTo(pts[0].x, H-pB);
+    ctx.closePath(); ctx.fill();
+  });
+  // lines
+  lines.forEach(ds=>{
+    if(hiddenLines.has(ds.key)) return;
+    const pts = ds.data.map((v,i)=>({x:pL+(W-pL-pR)*i/(ds.data.length-1),y:pT+(H-pT-pB)*(1-v/100)}));
+    ctx.strokeStyle=ds.c; ctx.lineWidth=2.2;
+    ctx.shadowColor=ds.c; ctx.shadowBlur=5;
+    ctx.beginPath();
+    pts.forEach((p,i)=>{
+      if(i===0){ctx.moveTo(p.x,p.y);}
+      else {
+        const cp=pts[i-1];
+        ctx.bezierCurveTo(cp.x+(p.x-cp.x)*0.5,cp.y,p.x-(p.x-cp.x)*0.5,p.y,p.x,p.y);
+      }
+    });
+    ctx.stroke(); ctx.shadowBlur=0;
+    // endpoint dot
+    const last=pts[pts.length-1];
+    ctx.fillStyle=ds.c; ctx.beginPath(); ctx.arc(last.x,last.y,4,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(last.x,last.y,2,0,Math.PI*2); ctx.fill();
+  });
+}
+
+function drawToD(){
+  const c=document.getElementById('todChart'); if(!c)return;
+  const ctx=c.getContext('2d'); c.width=c.offsetWidth; c.height=260;
+  const W=c.width, H=c.height, pL=22, pR=12, pT=14, pB=38;
+  ctx.clearRect(0,0,W,H);
+  const hrs=['00','02','04','06','08','10','12','14','16','18','20','22'];
+  const vol=[5,3,2,8,45,72,68,60,78,100,91,62];
+  const bW=(W-pL-pR)/hrs.length-5;
+  hrs.forEach((h,i)=>{
+    const bH=(H-pT-pB)*(vol[i]/100), x=pL+i*((W-pL-pR)/hrs.length)+2, y=H-pB-bH;
+    const g=ctx.createLinearGradient(x,y,x,H-pB);
+    g.addColorStop(0,'rgba(232,80,58,0.88)'); g.addColorStop(1,'rgba(232,80,58,0.2)');
+    ctx.fillStyle=g; ctx.shadowColor='rgba(232,80,58,0.2)'; ctx.shadowBlur=8;
+    ctx.beginPath(); ctx.roundRect(x,y,bW,bH,3); ctx.fill(); ctx.shadowBlur=0;
+    ctx.fillStyle='rgba(0,0,0,0.28)'; ctx.font='8px IBM Plex Mono'; ctx.textAlign='center';
+    ctx.fillText(h, x+bW/2, H-pB+14);
+    if(vol[i]>30){ctx.fillStyle='rgba(0,0,0,0.4)'; ctx.font='8px Sora'; ctx.fillText(vol[i]+'%',x+bW/2,y-4);}
+  });
+}
+
+function drawRating(){
+  const c=document.getElementById('ratingChart'); if(!c)return;
+  const ctx=c.getContext('2d'); c.width=c.offsetWidth; c.height=260;
+  const W=c.width, H=c.height, pL=38, pR=12, pT=14, pB=38;
+  ctx.clearRect(0,0,W,H);
+  const hrs=['00','02','04','06','08','10','12','14','16','18','20','22'];
+  const rtg=[4.1,4.0,3.9,4.2,4.3,4.4,4.35,4.3,4.28,4.25,4.32,4.38];
+  const yF=v=>pT+(H-pT-pB)*((4.5-v)/0.65);
+  for(let i=0;i<=4;i++){
+    const y=yF(3.9+i*0.15);
+    ctx.strokeStyle='rgba(0,0,0,0.05)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(pL,y); ctx.lineTo(W-pR,y); ctx.stroke();
+    ctx.fillStyle='rgba(0,0,0,0.25)'; ctx.font='8px IBM Plex Mono'; ctx.textAlign='right';
+    ctx.fillText((3.9+i*0.15).toFixed(1),pL-4,y+3);
+  }
+  const pts=rtg.map((r,i)=>({x:pL+(W-pL-pR)*i/(hrs.length-1),y:yF(r)}));
+  // fill
+  const g=ctx.createLinearGradient(0,pT,0,H-pB);
+  g.addColorStop(0,'rgba(31,158,106,0.18)'); g.addColorStop(1,'rgba(31,158,106,0)');
+  ctx.fillStyle=g; ctx.beginPath();
+  pts.forEach((p,i)=>{if(i===0)ctx.moveTo(p.x,p.y);else{const pp=pts[i-1];ctx.bezierCurveTo(pp.x+(p.x-pp.x)*0.5,pp.y,p.x-(p.x-pp.x)*0.5,p.y,p.x,p.y);}});
+  ctx.lineTo(pts[pts.length-1].x,H-pB); ctx.lineTo(pts[0].x,H-pB); ctx.closePath(); ctx.fill();
+  // line
+  ctx.strokeStyle='#1F9E6A'; ctx.lineWidth=2.5; ctx.shadowColor='rgba(31,158,106,0.3)'; ctx.shadowBlur=6;
+  ctx.beginPath();
+  pts.forEach((p,i)=>{if(i===0)ctx.moveTo(p.x,p.y);else{const pp=pts[i-1];ctx.bezierCurveTo(pp.x+(p.x-pp.x)*0.5,pp.y,p.x-(p.x-pp.x)*0.5,p.y,p.x,p.y);}});
+  ctx.stroke(); ctx.shadowBlur=0;
+  hrs.forEach((h,i)=>{const x=pL+(W-pL-pR)*i/(hrs.length-1);ctx.fillStyle='rgba(0,0,0,0.25)';ctx.font='8px IBM Plex Mono';ctx.textAlign='center';ctx.fillText(h,x,H-pB+14);});
+}
+
+function drawRadar(){
+  const c=document.getElementById('radarChart'); if(!c)return;
+  const ctx=c.getContext('2d');
+  const W=340, H=300, cx=170, cy=145, r=95;
+  ctx.clearRect(0,0,W,H);
+  const labels=['Activation','1st Ride','Quality','Safety','Support','Retention'];
+  const vals=[0.784,0.612,0.862,0.947,0.76,0.421];
+  const targets=[0.80,0.65,0.90,0.96,0.84,0.50];
+  const N=6, step=Math.PI*2/N;
+  // grid rings
+  [0.25,0.5,0.75,1].forEach(sc=>{
+    ctx.strokeStyle='rgba(0,0,0,0.06)'; ctx.lineWidth=1;
+    ctx.beginPath();
+    for(let i=0;i<N;i++){const a=i*step-Math.PI/2;i===0?ctx.moveTo(cx+Math.cos(a)*r*sc,cy+Math.sin(a)*r*sc):ctx.lineTo(cx+Math.cos(a)*r*sc,cy+Math.sin(a)*r*sc);}
+    ctx.closePath(); ctx.stroke();
+  });
+  // spokes
+  for(let i=0;i<N;i++){const a=i*step-Math.PI/2;ctx.strokeStyle='rgba(0,0,0,0.06)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r);ctx.stroke();}
+  // target
+  ctx.fillStyle='rgba(232,80,58,0.05)'; ctx.strokeStyle='rgba(232,80,58,0.25)'; ctx.lineWidth=1; ctx.setLineDash([4,3]);
+  ctx.beginPath(); targets.forEach((v,i)=>{const a=i*step-Math.PI/2;const x=cx+Math.cos(a)*r*v,y=cy+Math.sin(a)*r*v;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
+  // actual
+  const grd=ctx.createRadialGradient(cx,cy,0,cx,cy,r);
+  grd.addColorStop(0,'rgba(232,80,58,0.22)'); grd.addColorStop(1,'rgba(232,80,58,0.04)');
+  ctx.fillStyle=grd; ctx.strokeStyle='#E8503A'; ctx.lineWidth=2.5; ctx.shadowColor='rgba(232,80,58,0.35)'; ctx.shadowBlur=10;
+  ctx.beginPath(); vals.forEach((v,i)=>{const a=i*step-Math.PI/2;const x=cx+Math.cos(a)*r*v,y=cy+Math.sin(a)*r*v;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
+  // dots + labels
+  vals.forEach((v,i)=>{
+    const a=i*step-Math.PI/2;
+    ctx.fillStyle='#E8503A'; ctx.beginPath(); ctx.arc(cx+Math.cos(a)*r*v,cy+Math.sin(a)*r*v,4,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(cx+Math.cos(a)*r*v,cy+Math.sin(a)*r*v,2,0,Math.PI*2); ctx.fill();
+    const lx=cx+Math.cos(a)*(r+26), ly=cy+Math.sin(a)*(r+26);
+    ctx.fillStyle='rgba(0,0,0,0.58)'; ctx.font='bold 9px Sora,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(labels[i],lx,ly);
+    ctx.fillStyle='rgba(0,0,0,0.32)'; ctx.font='8px IBM Plex Mono';
+    ctx.fillText((v*100).toFixed(0)+'%',lx,ly+11);
+  });
+}
+
+function drawMatrix(){
+  const c=document.getElementById('matrixChart'); if(!c)return;
+  const ctx=c.getContext('2d'); c.width=c.offsetWidth; c.height=280;
+  const W=c.width, H=c.height, pL=50, pR=20, pT=18, pB=40;
+  ctx.clearRect(0,0,W,H);
+  // axes
+  ctx.strokeStyle='rgba(0,0,0,0.1)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(pL,pT); ctx.lineTo(pL,H-pB); ctx.lineTo(W-pR,H-pB); ctx.stroke();
+  ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.font='9px Sora'; ctx.textAlign='center';
+  ctx.fillText('← Low Effort          High Effort →', pL+(W-pL-pR)/2, H-pB+20);
+  ctx.save(); ctx.translate(pL-34,(pT+H-pB)/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('← Low Impact          High Impact →',0,0); ctx.restore();
+  // quadrant hints
+  const mx=pL+(W-pL-pR)*0.5, my=pT+(H-pT-pB)*0.5;
+  ctx.fillStyle='rgba(31,158,106,0.04)'; ctx.fillRect(pL,pT,mx-pL,my-pT);
+  ctx.strokeStyle='rgba(0,0,0,0.04)'; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(mx,pT); ctx.lineTo(mx,H-pB); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pL,my); ctx.lineTo(W-pR,my); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle='rgba(31,158,106,0.3)'; ctx.font='8px Sora'; ctx.textAlign='center';
+  ctx.fillText('Quick Wins',pL+(mx-pL)/2,pT+14);
+  const items=[
+    {l:'KYC Fix',e:0.25,i:0.85,r:14,c:'#E8503A'},{l:'Pairing UX',e:0.35,i:0.78,r:12,c:'#2563EB'},
+    {l:'Win-Back',e:0.30,i:0.72,r:11,c:'#DB2777'},{l:'Helmet',e:0.55,i:0.65,r:10,c:'#D97706'},
+    {l:'FCR Tool',e:0.65,i:0.60,r:10,c:'#7C3AED'},{l:'Battery',e:0.45,i:0.55,r:9,c:'#1F9E6A'},
+  ];
+  items.forEach(it=>{
+    const x=pL+(W-pL-pR)*it.e, y=pT+(H-pT-pB)*(1-it.i);
+    ctx.fillStyle=it.c; ctx.globalAlpha=0.12; ctx.beginPath(); ctx.arc(x,y,it.r+7,0,Math.PI*2); ctx.fill();
+    ctx.globalAlpha=1; ctx.fillStyle=it.c; ctx.beginPath(); ctx.arc(x,y,it.r,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='rgba(0,0,0,0.45)'; ctx.font='8px Sora'; ctx.textAlign='center';
+    ctx.fillText(it.l,x,y+it.r+12);
+  });
+}
+
+/* ══════════════════════════════════════════════
+   SIMULATOR
+══════════════════════════════════════════════ */
+const base={ac:78.4,fr:61.2,re:42.1,cs:3.8,sa:94.7};
+function sim(){
+  const ob=+document.getElementById('s-ob').value, pa=+document.getElementById('s-pa').value,
+    ba=+document.getElementById('s-ba').value, wb=+document.getElementById('s-wb').value,
+    fc=+document.getElementById('s-fc').value, hm=+document.getElementById('s-hm').value;
+  document.getElementById('sv-ob').textContent='+'+ob+'%';
+  document.getElementById('sv-pa').textContent='+'+pa+'%';
+  document.getElementById('sv-ba').textContent='+'+ba+'%';
+  document.getElementById('sv-wb').textContent='+'+wb+'%';
+  document.getElementById('sv-fc').textContent='+'+fc+'%';
+  document.getElementById('sv-hm').textContent='+'+hm+'%';
+  const nac=Math.min(98,base.ac+ob*0.6+pa*0.1);
+  const nfr=Math.min(98,base.fr+pa*0.7+ob*0.2+ba*0.3);
+  const nre=Math.min(98,base.re+wb*0.6+ob*0.15+pa*0.1);
+  const ncs=Math.min(5,base.cs+fc*0.04);
+  const nsa=Math.min(99.9,base.sa+hm*0.2);
+  const rev=(nfr-base.fr)*0.012e6+(nre-base.re)*0.008e6;
+  const fmt=(a,b,suffix='%')=>`${a.toFixed(1)}${suffix} → <span class="${b>a?'positive':''}">${b.toFixed(1)}${suffix}</span>`;
+  document.getElementById('sr-ac').innerHTML=fmt(base.ac,nac);
+  document.getElementById('sr-fr').innerHTML=fmt(base.fr,nfr);
+  document.getElementById('sr-re').innerHTML=fmt(base.re,nre);
+  document.getElementById('sr-cs').innerHTML=fmt(base.cs,ncs,'');
+  document.getElementById('sr-sa').innerHTML=fmt(base.sa,nsa);
+  document.getElementById('sr-rv').textContent=`+€${(rev/1000).toFixed(0)}K / month`;
+  drawSimChart([nac,nfr,nre,ncs*20,nsa]);
+}
+function drawSimChart(proj){
+  const c=document.getElementById('simChart'); if(!c)return;
+  const ctx=c.getContext('2d'); c.width=c.offsetWidth; c.height=200;
+  const W=c.width, H=c.height, pL=40, pR=12, pT=12, pB=32;
+  ctx.clearRect(0,0,W,H);
+  const labels=['Activation','1st Ride','Retention','CSAT×20','Safety'];
+  const baseline=[78.4,61.2,42.1,76,94.7];
+  const p=proj||baseline;
+  const n=labels.length, bW=(W-pL-pR)/(n*2.8);
+  for(let i=0;i<=4;i++){
+    const y=pT+(H-pT-pB)*(i/4);
+    ctx.strokeStyle='rgba(0,0,0,0.05)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(pL,y); ctx.lineTo(W-pR,y); ctx.stroke();
+    ctx.fillStyle='rgba(0,0,0,0.2)'; ctx.font='8px IBM Plex Mono'; ctx.textAlign='right';
+    ctx.fillText(100-i*25,pL-4,y+3);
+  }
+  labels.forEach((l,i)=>{
+    const gx=pL+(W-pL-pR)*i/n+bW*0.1;
+    // baseline
+    const bH=(H-pT-pB)*(baseline[i]/100);
+    ctx.fillStyle='rgba(0,0,0,0.06)'; ctx.beginPath(); ctx.roundRect(gx,H-pB-bH,bW,bH,2); ctx.fill();
+    // projected
+    const pH=(H-pT-pB)*(p[i]/100);
+    const col=p[i]>=baseline[i]?'#E8503A':'#DC2626';
+    ctx.fillStyle=col; ctx.globalAlpha=0.82; ctx.beginPath(); ctx.roundRect(gx+bW+3,H-pB-pH,bW,pH,2); ctx.fill();
+    ctx.globalAlpha=1;
+    ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.font='7.5px Sora'; ctx.textAlign='center';
+    ctx.fillText(l,gx+bW+1,H-pB+14);
+  });
+}
+function resetSim(){
+  ['ob','pa','ba','wb','fc','hm'].forEach(k=>{document.getElementById('s-'+k).value=0;document.getElementById('sv-'+k).textContent='+0%';});
+  sim(); showToast('All levers reset to baseline','↺');
+}
+setTimeout(drawSimChart,200);
+
+/* ══════════════════════════════════════════════
+   EXPORT
+══════════════════════════════════════════════ */
+function doExport(){
+  showToast('Exporting data… CSV ready in 3s','📊');
+  setTimeout(()=>showToast('Export complete — check downloads','✅'),2000);
+}
+
+/* ══════════════════════════════════════════════
+   FILTER CHANGE
+══════════════════════════════════════════════ */
+function onFilterChange(){
+  const mkt = document.getElementById('mktFilter').value;
+  const veh = document.getElementById('vehFilter').value;
+  const mktLabel = mkt==='all'?'All Markets':mkt;
+  const vehLabel = veh==='all'?'All Vehicles':veh;
+  showToast(`Filter: ${mktLabel} · ${vehLabel}`,'🔍');
+  drawTrend();
+}
+
+/* ══════════════════════════════════════════════
+   INIT & ANIMATE
+══════════════════════════════════════════════ */
+function animateBars(){
+  document.querySelectorAll('.kpi-bar-fill[data-fill]').forEach(b=>{
+    setTimeout(()=>b.style.width=b.dataset.fill, 80);
+  });
+}
+
+// Inject pb-card accent colors via CSS
+const pbStyle=document.createElement('style');
+pbStyle.textContent=`
+  .pc-coral::before{background:var(--coral);}
+  .pc-amber::before{background:var(--warn);}
+  .pc-green::before{background:var(--success);}
+  .pc-blue::before{background:var(--info);}
+  .pct-coral{background:var(--coral-pale);color:var(--coral);}
+  .pct-amber{background:var(--wp);color:var(--warn);}
+  .pct-green{background:var(--sp);color:var(--success);}
+  .pct-blue{background:var(--ip);color:var(--info);}
+`;
+document.head.appendChild(pbStyle);
+
+// Initial boot
+setTimeout(()=>{
+  drawTrend();
+  animateBars();
+},250);
+
+// Redraw on resize
+let rtimer;
+window.addEventListener('resize',()=>{
+  clearTimeout(rtimer);
+  rtimer=setTimeout(()=>{
+    drawTrend();
+    drawSimChart();
+    if(document.getElementById('page-dashboard').classList.contains('active')){
+      drawToD(); drawRating(); drawRadar(); drawMatrix();
+    }
+  },150);
+});
+
+// Stagger tile entrance
+document.querySelectorAll('.kpi-tile').forEach((el,i)=>{
+  el.style.opacity='0';el.style.transform='translateY(16px)';
+  setTimeout(()=>{el.style.transition='opacity 0.4s ease, transform 0.4s ease';el.style.opacity='1';el.style.transform='';},300+i*60);
+});
+</script>
+</body>
+</html>
